@@ -19,7 +19,7 @@
         "codigo": "a1",
         "articulo": "sacapunta",
         "precio": 5.0,
-        "stock": 3,
+        "stock": 0,
         "categoria": "Papeleria",
         "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\img_a1.png"
     },
