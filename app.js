@@ -291,23 +291,25 @@ function actualizarCarritoVisual() {
 }
 
 function enviarPedidoFinal() {
-    // 1. Enviar a Python para descuento automático
+    if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
+    const fecha = document.getElementById('fecha').value;
+    const hora = document.getElementById('hora').value;
+    const cliente = document.getElementById('cliente').value.trim();
+    if (!fecha) { alert("Selecciona la fecha de entrega"); return; }
+    if (cliente.length < 3) { alert("Escribe tu nombre completo."); return; }
+    
+    let mensaje = "*¡HOLA, TIENDA DAYH!*\n Quiero agendar el siguiente pedido:\n━━━━━━━━━━━━━━━━━━━━━\n\n";
+    mensaje += "*CLIENTE:* " + cliente + "\n\n*PRODUCTOS SOLICITADOS:*\n";
+    
+    let total = 0;
     carrito.forEach(item => {
-        fetch('http://127.0.0.1:5000/registrar_venta', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                codigo: item.codigo, 
-                cantidad: item.cantidad 
-            })
-        }).catch(err => console.error("Error al registrar venta en servidor local:", err));
+        const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
+        if (!prod) return;
+        const subtotal = prod.precio * item.cantidad;
+        total += subtotal;
+        mensaje += "*" + item.cantidad + "x* [" + prod.codigo + "] " + prod.articulo + " ➔ " + formatearDinero(subtotal) + "\n";
+        prod.stock -= item.cantidad;
     });
-
-    // 2. Construir mensaje de WhatsApp (tu lógica actual)
-    // ...
-    alert("Pedido enviado. Inventario sincronizado.");
-    finalizarProcesoPedido();
-}
     
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n*TOTAL:* " + formatearDinero(total) + "\n";
     mensaje += "*FECHA DE ENTREGA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
