@@ -295,7 +295,7 @@ function enviarPedidoFinal() {
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
     const cliente = document.getElementById('cliente').value.trim();
-    if (!fecha) { alert("Selecciona la fecha de recogida"); return; }
+    if (!fecha) { alert("Selecciona la fecha de entrega"); return; }
     if (cliente.length < 3) { alert("Escribe tu nombre completo."); return; }
     
     let mensaje = "*¡HOLA, TIENDA DAYH!*\n Quiero agendar el siguiente pedido:\n━━━━━━━━━━━━━━━━━━━━━\n\n";
@@ -312,7 +312,7 @@ function enviarPedidoFinal() {
     });
     
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n*TOTAL:* " + formatearDinero(total) + "\n";
-    mensaje += "*FECHA DE RECOGIDA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
+    mensaje += "*FECHA DE ENTREGA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
     
     urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + window.encodeURIComponent(mensaje);
     
