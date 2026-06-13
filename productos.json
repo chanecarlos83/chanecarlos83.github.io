@@ -86,5 +86,13 @@
         "stock": 3,
         "categoria": "Electronica",
         "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_c3_1781309704.png"
+    },
+    {
+        "codigo": "b3",
+        "articulo": "pelota",
+        "precio": 25.0,
+        "stock": 3,
+        "categoria": "Jugueteria",
+        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_b3_1781376245.png"
     }
 ]

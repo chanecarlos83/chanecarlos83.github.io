@@ -71,34 +71,37 @@ function recuperarCarritoDeLocalStorage() {
 }
 
 function cargarProductos() {
-    // Intentar leer el inventario temporal guardado en el navegador de compras anteriores
+    // Intentar leer el inventario temporal guardado en el navegador
     let inventarioLocal = JSON.parse(localStorage.getItem('inventario_tienda')) || [];
 
     fetch('productos.json')
         .then(response => response.json())
         .then(productosJson => {
+            // Sincronizar de forma inteligente el JSON de Python con la sesión del navegador
             INVENTARIO_GLOBAL = productosJson.map(prodJson => {
-                // 1. Buscamos si el producto ya tiene un stock modificado en las compras previas
-                const prodGuardado = inventarioLocal.find(p => p.codigo === prodJson.codigo);
+                // Buscamos si el cliente tiene este producto actualmente en su carrito
+                const itemEnCarrito = carrito.find(c => c.codigo === prodJson.codigo);
+                const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
 
-                // 2. Si ya se vendió algo antes (existe en local), usamos ese stock. Si es nuevo, usamos el del JSON.
-                let stockReal = prodGuardado ? prodGuardado.stock : prodJson.stock;
+                // 🌟 SOLUCIÓN: El stock base SIEMPRE será el que pusiste en Python. 
+                // Solo le restamos lo que el usuario tenga metido en su carrito en este instante.
+                let stockActualizado = prodJson.stock - cantidadEnCarrito;
 
                 return {
                     ...prodJson,
-                    stock: stockReal >= 0 ? stockReal : 0
+                    stock: stockActualizado >= 0 ? stockActualizado : 0
                 };
             });
 
-            // Guardamos el estado unificado en el almacenamiento local
+            // Guardamos el estado limpio en el almacenamiento local
             localStorage.setItem('inventario_tienda', JSON.stringify(INVENTARIO_GLOBAL));
             
-            // Renderizar el catálogo
+            // Renderizar el catálogo con los datos frescos
             filtrarCatalogo();
         })
         .catch(error => {
             console.error('Error al cargar el inventario desde productos.json:', error);
-            // Si falla el archivo por alguna razón, usamos el respaldo local
+            // Si falla el archivo, usar el respaldo local
             if (inventarioLocal.length > 0) {
                 INVENTARIO_GLOBAL = inventarioLocal;
                 filtrarCatalogo();
@@ -292,7 +295,7 @@ function enviarPedidoFinal() {
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
     const cliente = document.getElementById('cliente').value.trim();
-    if (!fecha) { alert("Selecciona la fecha de entrega"); return; }
+    if (!fecha) { alert("Selecciona la fecha de recogida"); return; }
     if (cliente.length < 3) { alert("Escribe tu nombre completo."); return; }
     
     let mensaje = "*¡HOLA, TIENDA DAYH!*\n Quiero agendar el siguiente pedido:\n━━━━━━━━━━━━━━━━━━━━━\n\n";
@@ -309,7 +312,7 @@ function enviarPedidoFinal() {
     });
     
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n*TOTAL:* " + formatearDinero(total) + "\n";
-    mensaje += "*FECHA DE ENTREGA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
+    mensaje += "*FECHA DE RECOGIDA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
     
     urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + window.encodeURIComponent(mensaje);
     
