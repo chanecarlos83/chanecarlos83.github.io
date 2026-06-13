@@ -71,37 +71,34 @@ function recuperarCarritoDeLocalStorage() {
 }
 
 function cargarProductos() {
-    // Intentar leer el inventario temporal guardado en el navegador
+    // Intentar leer el inventario temporal guardado en el navegador de compras anteriores
     let inventarioLocal = JSON.parse(localStorage.getItem('inventario_tienda')) || [];
 
     fetch('productos.json')
         .then(response => response.json())
         .then(productosJson => {
-            // Sincronizar de forma inteligente el JSON de Python con la sesión del navegador
             INVENTARIO_GLOBAL = productosJson.map(prodJson => {
-                // Buscamos si el cliente tiene este producto actualmente en su carrito
-                const itemEnCarrito = carrito.find(c => c.codigo === prodJson.codigo);
-                const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+                // 1. Buscamos si el producto ya tiene un stock modificado en las compras previas
+                const prodGuardado = inventarioLocal.find(p => p.codigo === prodJson.codigo);
 
-                // 🌟 SOLUCIÓN: El stock base SIEMPRE será el que pusiste en Python. 
-                // Solo le restamos lo que el usuario tenga metido en su carrito en este instante.
-                let stockActualizado = prodJson.stock - cantidadEnCarrito;
+                // 2. Si ya se vendió algo antes (existe en local), usamos ese stock. Si es nuevo, usamos el del JSON.
+                let stockReal = prodGuardado ? prodGuardado.stock : prodJson.stock;
 
                 return {
                     ...prodJson,
-                    stock: stockActualizado >= 0 ? stockActualizado : 0
+                    stock: stockReal >= 0 ? stockReal : 0
                 };
             });
 
-            // Guardamos el estado limpio en el almacenamiento local
+            // Guardamos el estado unificado en el almacenamiento local
             localStorage.setItem('inventario_tienda', JSON.stringify(INVENTARIO_GLOBAL));
             
-            // Renderizar el catálogo con los datos frescos
+            // Renderizar el catálogo
             filtrarCatalogo();
         })
         .catch(error => {
             console.error('Error al cargar el inventario desde productos.json:', error);
-            // Si falla el archivo, usar el respaldo local
+            // Si falla el archivo por alguna razón, usamos el respaldo local
             if (inventarioLocal.length > 0) {
                 INVENTARIO_GLOBAL = inventarioLocal;
                 filtrarCatalogo();
