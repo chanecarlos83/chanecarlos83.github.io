@@ -347,3 +347,10 @@ function ejecutarCopiadoAlternativo(texto) {
 }
 
 function abrirChatManual() { if (urlGlobalWhatsApp) window.open(urlGlobalWhatsApp, '_blank'); }
+
+// Dentro de la función donde cargas el HTML de cada producto
+let nombreImagen = producto.imagen.split(/[/\\\\]/).pop(); // Por si acaso queda alguna ruta vieja
+let rutaFinalImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'ruta/a/imagen_por_defecto.png';
+
+// Úsala en tu etiqueta img
+// <img src="${rutaFinalImagen}" alt="${producto.articulo}">
