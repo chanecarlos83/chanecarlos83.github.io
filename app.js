@@ -73,13 +73,13 @@ function recuperarCarritoDeLocalStorage() {
 function cargarProductos() {
     let inventarioLocal = JSON.parse(localStorage.getItem('inventario_tienda')) || [];
 
-    fetch('productos.json')
+    // 🌟 AGREGAMOS "?v=" + Date.now() PARA EVITAR EL CACHÉ DEL NAVEGADOR
+    fetch('productos.json?v=' + Date.now())
         .then(response => response.json())
         .then(productosJson => {
             INVENTARIO_GLOBAL = productosJson.map(prodJson => {
                 const itemEnCarrito = carrito.find(c => c.codigo === prodJson.codigo);
                 const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
-
                 let stockActualizado = prodJson.stock - cantidadEnCarrito;
 
                 return {
@@ -277,7 +277,7 @@ function actualizarCarritoVisual() {
     if (txtMonto) txtMonto.innerText = formatearDinero(totalGeneral);
 }
 
-function enviarPedidoFinal() {
+async function enviarPedidoFinal() { // 🌟 Agregamos async aquí
     if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
@@ -289,6 +289,10 @@ function enviarPedidoFinal() {
     mensaje += "*CLIENTE:* " + cliente + "\n\n*PRODUCTOS SOLICITADOS:*\n";
     
     let total = 0;
+    
+    // Creamos una lista para almacenar las promesas de cada fetch
+    let promesasVentas = [];
+
     carrito.forEach(item => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
         if (!prod) return;
@@ -297,7 +301,8 @@ function enviarPedidoFinal() {
         mensaje += "*" + item.cantidad + "x* [" + prod.codigo + "] " + prod.articulo + " ➔ " + formatearDinero(subtotal) + "\n";
         prod.stock -= item.cantidad;
 
-        fetch("http://127.0.0.1:5000/registrar_venta", {
+        // Guardamos la petición en la lista sin ejecutarla de golpe suelta
+        let peticion = fetch("http://127.0.0.1:5000/registrar_venta", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -308,7 +313,12 @@ function enviarPedidoFinal() {
                 cantidad: item.cantidad
             })
         }).catch(err => console.error("Error al registrar venta en el backend:", err));
+        
+        promesasVentas.push(peticion);
     });
+    
+    // 🌟 ESPERAMOS a que Python procese absolutamente todas las ventas y actualice el JSON
+    await Promise.all(promesasVentas);
     
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n*TOTAL:* " + formatearDinero(total) + "\n";
     mensaje += "*FECHA DE RECOGIDA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
@@ -331,7 +341,10 @@ function finalizarProcesoPedido() {
     carrito = []; 
     guardarCarritoEnLocalStorage(); 
     actualizarCarritoVisual(); 
-    filtrarCatalogo(); 
+    
+    // 🌟 En lugar de solo filtrar, obligamos a la web a traer el JSON recién guardado por Python
+    cargarProductos(); 
+    
     document.getElementById('fecha').value = '';
     document.getElementById('cliente').value = '';
 }
