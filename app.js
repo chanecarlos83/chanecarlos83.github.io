@@ -352,5 +352,15 @@ function abrirChatManual() { if (urlGlobalWhatsApp) window.open(urlGlobalWhatsAp
 let nombreImagen = producto.imagen.split(/[/\\\\]/).pop(); // Por si acaso queda alguna ruta vieja
 let rutaFinalImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'ruta/a/imagen_por_defecto.png';
 
-// Úsala en tu etiqueta img
-// <img src="${rutaFinalImagen}" alt="${producto.articulo}">
+// Ejemplo de cómo tendrías que enviar la petición desde tu frontend web
+fetch("http://127.0.0.1:5000/registrar_venta", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer MiClaveSuperSegura_Dayh_2026" // <-- ¡Aquí va el token!
+    },
+    body: JSON.stringify({
+        codigo: "12345678",
+        cantidad: 1
+    })
+})
