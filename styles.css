@@ -409,3 +409,69 @@ hr {
     text-align: center; 
     line-height: 1.5; 
 }
+
+/* =======================================================
+   OPTIMIZACIÓN EXCLUSIVA PARA MÓVILES Y TABLETS
+   ======================================================= */
+@media (max-width: 768px) {
+    /* 1. Aprovechar el espacio de la pantalla */
+    body {
+        padding: 12px;
+    }
+
+    .container {
+        gap: 20px;
+    }
+
+    /* 2. Achicar el encabezado para que no estorbe */
+    .header-tienda {
+        padding: 25px 15px;
+        margin-bottom: 25px;
+        border-radius: 16px;
+    }
+
+    .header-tienda h1 {
+        font-size: 30px; /* Letra más adaptable al celular */
+    }
+
+    .header-tienda p {
+        font-size: 14px;
+    }
+
+    /* 3. ¡Magia Móvil! Categorías deslizables con el dedo */
+    .categorias-barra {
+        flex-wrap: nowrap; /* Evita que se apilen hacia abajo */
+        overflow-x: auto; /* Permite deslizar a los lados */
+        padding-bottom: 15px; /* Espacio para el dedo/scroll */
+        -webkit-overflow-scrolling: touch; /* Deslizamiento suave en iPhone/Android */
+        gap: 12px;
+        /* Ocultar la barra de scroll visualmente pero mantener la función */
+        scrollbar-width: none; 
+    }
+    
+    .categorias-barra::-webkit-scrollbar {
+        display: none;
+    }
+
+    .btn-categoria {
+        flex-shrink: 0; /* Evita que los botones se aplasten */
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    /* 4. Ajustar el buscador */
+    .buscador-contenedor input {
+        padding: 14px;
+        font-size: 14px;
+    }
+
+    /* 5. Ajustar el tamaño del carrito */
+    .carrito {
+        padding: 20px 15px;
+        border-radius: 16px;
+    }
+
+    .carrito-header h2 {
+        font-size: 20px;
+    }
+}
