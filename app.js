@@ -1,6 +1,6 @@
 const TELEFONO_WHATSAPP = "527442411773";
 // 🔴 CUANDO USES NGROK PARA TUS CLIENTES, CAMBIA ESTA URL POR LA DE NGROK
-const API_BASE_URL = "http://127.0.0.1:5000"; // Verifica que el puerto coincida
+const API_BASE_URL = "http://127.0.0.1:5000"; 
 
 let categorySeleccionada = "todas";
 let urlGlobalWhatsApp = "";
@@ -48,6 +48,35 @@ function configuringCamposFecha() {
             }
         });
     }
+
+    const campoHora = document.getElementById('hora');
+    if (campoHora) {
+        campoHora.addEventListener('change', (e) => {
+            const fechaSeleccionada = document.getElementById('fecha').value;
+            if (!fechaSeleccionada) return;
+
+            const hoyStr = new Date().toISOString().split('T')[0];
+            if (fechaSeleccionada === hoyStr) {
+                const ahora = new Date();
+                const match = e.target.value.match(/(\d+):(\d+)\s*([AP]M)/i);
+                if (!match) return;
+                
+                const [horaSeleccionada, minutos, periodo] = match.slice(1);
+                let hora24 = parseInt(horaSeleccionada);
+                
+                if (periodo.toUpperCase() === 'PM' && hora24 !== 12) hora24 += 12;
+                if (periodo.toUpperCase() === 'AM' && hora24 === 12) hora24 = 0;
+
+                const horaLimite = new Date();
+                horaLimite.setHours(hora24, parseInt(minutos), 0, 0);
+
+                if (horaLimite < ahora) {
+                    alert("⏰ La hora seleccionada ya ha pasado el día de hoy. Elige una hora más tarde.");
+                    e.target.value = '';
+                }
+            }
+        });
+    }
 }
 
 function formatearDinero(numero) {
@@ -75,7 +104,6 @@ function recuperarCarritoDeLocalStorage() {
 function cargarProductos() {
     let inventarioLocal = JSON.parse(localStorage.getItem('inventario_tienda')) || [];
 
-    // Consulta en tiempo real al inventario de Python
     fetch(`${API_BASE_URL}/productos?v=` + Date.now())
         .then(response => {
             if (!response.ok) throw new Error("Servidor offline");
@@ -128,6 +156,7 @@ function renderizarTarjetasHTML(productosAMostrar) {
         const textoStock = esAgotado ? 'Agotado' : `Disponibles: ${stockDisponibleReal}`;
         const claseStock = esAgotado ? 'producto-stock agotado' : 'producto-stock';
 
+        // 🌟 CORRECCIÓN RUTA IMAGEN 🌟
         let nombreImagen = prod.imagen ? prod.imagen.split(/[/\\\\]/).pop() : '';
         let rutaImagen = nombreImagen ? `${API_BASE_URL}/imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
 
@@ -195,6 +224,16 @@ function agregarAlCarrito(codigo) {
         guardarCarritoEnLocalStorage();
         actualizarCarritoVisual();
         filtrarCatalogo();
+        
+        // 🌟 ANIMACIÓN DEL CARRITO FLOTANTE 🌟
+        const cartBtn = document.getElementById('carrito-flotante');
+        if (cartBtn) {
+            cartBtn.classList.add('animar-carrito');
+            setTimeout(() => {
+                cartBtn.classList.remove('animar-carrito');
+            }, 400); 
+        }
+
     } else {
         alert("Lo sentimos, ya no quedan más unidades.");
     }
@@ -289,15 +328,36 @@ function actualizarCarritoVisual() {
 }
 
 async function enviarPedidoFinal() {
-    if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
+    if (carrito.length === 0) {
+        alert("⚠️ Tu carrito está vacío");
+        return;
+    }
+
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
     const cliente = document.getElementById('cliente').value.trim();
-    if (!fecha) { alert("Selecciona la fecha de recogida"); return; }
-    if (cliente.length < 3) { alert("Escribe tu nombre completo."); return; }
 
-    let mensaje = "*¡HOLA, TIENDA DAYH!*\n Quiero agendar el siguiente pedido:\n━━━━━━━━━━━━━━━━━━━━━\n\n";
-    mensaje += "*CLIENTE:* " + cliente + "\n\n*PRODUCTOS SOLICITADOS:*\n";
+    if (!fecha) {
+        alert("⚠️ Por favor, selecciona la fecha de recogida.");
+        return;
+    }
+    if (cliente.length < 3) {
+        alert("⚠️ Escribe tu nombre completo para el registro.");
+        return;
+    }
+
+    const btnEnviar = document.getElementById('btn-enviar-pedido');
+    const textoOriginalBtn = btnEnviar.innerText;
+    btnEnviar.disabled = true;
+    btnEnviar.innerText = "⌛ Procesando tu pedido...";
+
+    let mensaje = "*🛍️ ¡NUEVO PEDIDO - TIENDA DAYH!* 🛍️\n";
+    mensaje += "━━━━━━━━━━━━━━━━━━━━━\n";
+    mensaje += `*👤 CLIENTE:* ${cliente}\n`;
+    mensaje += `*📅 ENTREGA:* ${formatearFechaHumana(fecha)}\n`;
+    if (hora) mensaje += `*⏰ HORA APROX:* ${hora}\n`;
+    mensaje += "━━━━━━━━━━━━━━━━━━━━━\n\n";
+    mensaje += "*📦 PRODUCTOS SOLICITADOS:*\n";
 
     let total = 0;
     let promesasVentas = [];
@@ -305,11 +365,13 @@ async function enviarPedidoFinal() {
     carrito.forEach(item => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
         if (!prod) return;
+
         const subtotal = prod.precio * item.cantidad;
         total += subtotal;
-        mensaje += "*" + item.cantidad + "x* [" + prod.codigo + "] " + prod.articulo + " ➔ " + formatearDinero(subtotal) + "\n";
 
-        // Descontar inmediatamente de la base de datos de Python
+        mensaje += `🔹 *${item.cantidad}x* [${prod.codigo}] ${prod.articulo}\n`;
+        mensaje += `   _Subtotal: ${formatearDinero(subtotal)}_\n\n`;
+
         let peticion = fetch(`${API_BASE_URL}/registrar_venta`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -318,26 +380,34 @@ async function enviarPedidoFinal() {
                 cantidad: item.cantidad,
                 cliente: cliente
             })
-        }).catch(err => console.error("Error backend:", err));
+        }).catch(err => console.error("Error al registrar producto:", err));
 
         promesasVentas.push(peticion);
     });
 
-    await Promise.all(promesasVentas);
+    try {
+        await Promise.all(promesasVentas);
 
-    mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n*TOTAL:* " + formatearDinero(total) + "\n";
-    mensaje += "*FECHA DE RECOGIDA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
+        mensaje += "━━━━━━━━━━━━━━━━━━━━━\n";
+        mensaje += `*💰 TOTAL A PAGAR:* ${formatearDinero(total)}\n`;
+        mensaje += "━━━━━━━━━━━━━━━━━━━━━\n\n";
+        mensaje += "💬 _Por favor, envía este mensaje para confirmar las existencias y apartar tu mercancía._";
 
-    urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + window.encodeURIComponent(mensaje);
+        urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + window.encodeURIComponent(mensaje);
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(mensaje).then(() => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(mensaje);
             document.getElementById('alerta-copiado').style.display = 'block';
             window.open(urlGlobalWhatsApp, '_blank');
             finalizarProcesoPedido();
-        }).catch(() => ejecutarCopiadoAlternativo(mensaje));
-    } else {
-        ejecutarCopiadoAlternativo(mensaje);
+        } else {
+            ejecutarCopiadoAlternativo(mensaje);
+        }
+    } catch (error) {
+        alert("🔴 Hubo un problema de conexión con el servidor local. Por favor reintenta.");
+    } finally {
+        btnEnviar.disabled = false;
+        btnEnviar.innerText = textoOriginalBtn;
     }
 }
 
