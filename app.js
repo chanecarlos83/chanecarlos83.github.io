@@ -303,7 +303,7 @@ async function enviarPedidoFinal() {
     const cliente = document.getElementById('cliente').value.trim();
 
     if (!fecha) {
-        alert("Selecciona la fecha de recogida");
+        alert("Selecciona la fecha de entrega");
         return;
     }
 
@@ -341,7 +341,7 @@ async function enviarPedidoFinal() {
 
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n";
     mensaje += "*TOTAL:* " + formatearDinero(total) + "\n";
-    mensaje += "*FECHA DE RECOGIDA:* " + formatearFechaHumana(fecha) + "\n";
+    mensaje += "*FECHA DE ENTREGA:* " + formatearFechaHumana(fecha) + "\n";
     mensaje += "*HORA APROX:* " + hora + "\n";
 
     const datosPedido = {
