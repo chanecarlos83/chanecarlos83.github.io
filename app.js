@@ -1,20 +1,20 @@
-const TELEFONO_WHATSAPP = "527442411773"; 
+const TELEFONO_WHATSAPP = "527442411773";
 let categorySeleccionada = "todas";
 let urlGlobalWhatsApp = "";
 
 let INVENTARIO_GLOBAL = [];
-let carrito = []; 
+let carrito = [];
 
 window.addEventListener('load', () => {
     configuringCamposFecha();
-    recuperarCarritoDeLocalStorage(); 
-    cargarProductos(); 
+    recuperarCarritoDeLocalStorage();
+    cargarProductos();
     setupEventListeners();
 });
 
 function setupEventListeners() {
     document.getElementById('buscador').addEventListener('input', filtrarCatalogo);
-    
+
     document.querySelectorAll('.btn-categoria').forEach(button => {
         button.addEventListener('click', (e) => {
             const categoria = e.target.getAttribute('data-cat');
@@ -30,7 +30,7 @@ function setupEventListeners() {
 function configuringCamposFecha() {
     const hoy = new Date().toISOString().split('T')[0];
     const campoFecha = document.getElementById('fecha');
-    
+
     if (campoFecha) {
         campoFecha.min = hoy;
         campoFecha.addEventListener('input', (e) => {
@@ -38,18 +38,21 @@ function configuringCamposFecha() {
             if (!fechaSeleccionada) return;
 
             const fechaObj = new Date(fechaSeleccionada + 'T00:00:00');
-            const diaSemana = fechaObj.getDay(); 
+            const diaSemana = fechaObj.getDay();
 
             if (diaSemana === 0 || diaSemana === 6) {
                 alert("⚠️ Los fines de semana no realizamos entregas. Por favor, selecciona un día de Lunes a Viernes.");
-                e.target.value = ''; 
+                e.target.value = '';
             }
         });
     }
 }
 
 function formatearDinero(numero) {
-    return '$' + numero.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    // Protección extra: Si por alguna razón llega un valor vacío, lo convierte a 0 en lugar de crashear (NaN)
+    let num = parseFloat(numero);
+    if (isNaN(num)) num = 0;
+    return '$' + num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 }
 
 function formatearFechaHumana(fechaISO) {
@@ -73,17 +76,25 @@ function recuperarCarritoDeLocalStorage() {
 function cargarProductos() {
     let inventarioLocal = JSON.parse(localStorage.getItem('inventario_tienda')) || [];
 
-    // 🌟 AGREGAMOS "?v=" + Date.now() PARA EVITAR EL CACHÉ DEL NAVEGADOR
     fetch('productos.json?v=' + Date.now())
         .then(response => response.json())
         .then(productosJson => {
             INVENTARIO_GLOBAL = productosJson.map(prodJson => {
                 const itemEnCarrito = carrito.find(c => c.codigo === prodJson.codigo);
                 const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
-                let stockActualizado = prodJson.stock - cantidadEnCarrito;
+                
+                // 🌟 CORRECCIÓN CRÍTICA: Forzamos la limpieza de los datos a números reales
+                let precioLimpio = parseFloat(prodJson.precio);
+                if (isNaN(precioLimpio)) precioLimpio = 0;
+                
+                let stockLimpio = parseInt(prodJson.stock);
+                if (isNaN(stockLimpio)) stockLimpio = 0;
+                
+                let stockActualizado = stockLimpio - cantidadEnCarrito;
 
                 return {
                     ...prodJson,
+                    precio: precioLimpio, 
                     stock: stockActualizado >= 0 ? stockActualizado : 0
                 };
             });
@@ -104,7 +115,7 @@ function renderizarTarjetasHTML(productosAMostrar) {
     const contenedor = document.getElementById('lista-productos');
     if (!contenedor) return;
     contenedor.innerHTML = '';
-    
+
     if (productosAMostrar.length === 0) {
         contenedor.innerHTML = '<p class="sin-resultados">No encontramos productos.</p>';
         return;
@@ -118,8 +129,8 @@ function renderizarTarjetasHTML(productosAMostrar) {
         const esAgotado = stockDisponibleReal <= 0;
         const textoStock = esAgotado ? 'Agotado' : `Disponibles: ${stockDisponibleReal}`;
         const claseStock = esAgotado ? 'producto-stock agotado' : 'producto-stock';
-        
-        let nombreImagen = prod.imagen ? prod.imagen.split(/[/\\\\]/).pop() : ''; 
+
+        let nombreImagen = prod.imagen ? prod.imagen.split(/[/\\\\]/).pop() : '';
         let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
 
         const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -156,9 +167,9 @@ function filtrarCatalogo() {
         const nombreValido = prod.articulo ? prod.articulo.toLowerCase() : "";
         const codigoValido = prod.codigo ? prod.codigo.toLowerCase() : "";
         const categoriaValida = prod.categoria ? prod.categoria.toLowerCase() : "general";
-        
-        return (nombreValido.includes(textoBusqueda) || codigoValido.includes(textoBusqueda)) && 
-               (categorySeleccionada === "todas" || categoriaValida === categorySeleccionada.toLowerCase());
+
+        return (nombreValido.includes(textoBusqueda) || codigoValido.includes(textoBusqueda)) &&
+            (categorySeleccionada === "todas" || categoriaValida === categorySeleccionada.toLowerCase());
     });
     renderizarTarjetasHTML(productosFiltrados);
 }
@@ -183,7 +194,7 @@ function agregarAlCarrito(codigo) {
         } else {
             carrito.push({ codigo: codigo, cantidad: 1 });
         }
-        guardarCarritoEnLocalStorage(); 
+        guardarCarritoEnLocalStorage();
         actualizarCarritoVisual();
         filtrarCatalogo();
     } else {
@@ -209,7 +220,7 @@ function cambiarCantidad(codigo, cambio) {
             if (index !== -1) carrito.splice(index, 1);
         }
     }
-    guardarCarritoEnLocalStorage(); 
+    guardarCarritoEnLocalStorage();
     actualizarCarritoVisual();
     filtrarCatalogo();
 }
@@ -217,7 +228,7 @@ function cambiarCantidad(codigo, cambio) {
 function vaciarCarrito() {
     if (confirm("¿Estás seguro de vaciar el pedido?")) {
         carrito = [];
-        guardarCarritoEnLocalStorage(); 
+        guardarCarritoEnLocalStorage();
         actualizarCarritoVisual();
         filtrarCatalogo();
     }
@@ -228,39 +239,38 @@ function actualizarCarritoVisual() {
     const txtMonto = document.getElementById('total-monto');
     const btnVaciar = document.getElementById('btn-vaciar');
     const badgeContador = document.getElementById('badge-contador');
-    
-    // 🌟 1. Conectamos el nuevo globo rojo flotante
     const badgeFlotante = document.getElementById('badge-flotante');
-    
-    // 🌟 2. Calculamos el total de piezas y se lo asignamos a ambos globos
+
     const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
     if (badgeContador) badgeContador.innerText = totalItems;
     if (badgeFlotante) badgeFlotante.innerText = totalItems;
-    
+
     if (carrito.length === 0) {
         contenedor.innerHTML = '<p style="color: var(--text-light); text-align: center; margin: 20px 0;">El carrito está vacío.</p>';
         if (txtMonto) txtMonto.innerText = "$0.00";
         if (btnVaciar) btnVaciar.style.display = 'none';
         return;
     }
-    
+
     if (btnVaciar) btnVaciar.style.display = 'block';
     contenedor.innerHTML = '';
     let totalGeneral = 0;
-    
+
     carrito.forEach(item => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
         if (!prod) return;
-        
-        const subtotal = prod.precio * item.cantidad;
+
+        // 🌟 CORRECCIÓN CRÍTICA: Nos aseguramos de operar matemáticamente con seguridad
+        const precioSeguro = parseFloat(prod.precio) || 0;
+        const subtotal = precioSeguro * item.cantidad;
         totalGeneral += subtotal;
         const sinStockMas = prod.stock <= item.cantidad;
-        
+
         contenedor.innerHTML += `
             <div class="item-linea">
                 <div class="item-info">
                     <span class="item-nombre">[${prod.codigo}] ${prod.articulo}</span>
-                    <span class="item-precio">${formatearDinero(prod.precio)} c/u</span>
+                    <span class="item-precio">${formatearDinero(precioSeguro)} c/u</span>
                 </div>
                 <div class="item-controles">
                     <button class="btn-qty" data-codigo="${prod.codigo}" data-action="decrease">-</button>
@@ -270,7 +280,7 @@ function actualizarCarritoVisual() {
             </div>
         `;
     });
-    
+
     contenedor.querySelectorAll('.btn-qty').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const codigo = e.target.getAttribute('data-codigo');
@@ -278,58 +288,51 @@ function actualizarCarritoVisual() {
             cambiarCantidad(codigo, action === 'increase' ? 1 : -1);
         });
     });
-    
+
     if (txtMonto) txtMonto.innerText = formatearDinero(totalGeneral);
 }
 
-async function enviarPedidoFinal() { // 🌟 Agregamos async aquí
-    if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
+async function enviarPedidoFinal() { 
+    if (carrito.length === 0) { 
+        alert("Tu carrito está vacío"); 
+        return; 
+    }
+    
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
     const cliente = document.getElementById('cliente').value.trim();
-    if (!fecha) { alert("Selecciona la fecha de recogida"); return; }
-    if (cliente.length < 3) { alert("Escribe tu nombre completo."); return; }
     
+    if (!fecha) { 
+        alert("Selecciona la fecha de recogida"); 
+        return; 
+    }
+    if (cliente.length < 3) { 
+        alert("Escribe tu nombre completo."); 
+        return; 
+    }
+
     let mensaje = "*¡HOLA, TIENDA DAYH!*\n Quiero agendar el siguiente pedido:\n━━━━━━━━━━━━━━━━━━━━━\n\n";
     mensaje += "*CLIENTE:* " + cliente + "\n\n*PRODUCTOS SOLICITADOS:*\n";
-    
+
     let total = 0;
-    
-    // Creamos una lista para almacenar las promesas de cada fetch
-    let promesasVentas = [];
 
     carrito.forEach(item => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
         if (!prod) return;
-        const subtotal = prod.precio * item.cantidad;
+        
+        const precioSeguro = parseFloat(prod.precio) || 0;
+        const subtotal = precioSeguro * item.cantidad;
         total += subtotal;
         mensaje += "*" + item.cantidad + "x* [" + prod.codigo + "] " + prod.articulo + " ➔ " + formatearDinero(subtotal) + "\n";
-        prod.stock -= item.cantidad;
-
-        // Guardamos la petición en la lista sin ejecutarla de golpe suelta
-        let peticion = fetch("http://127.0.0.1:5000/registrar_venta", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer MiClaveSuperSegura_Dayh_2026"
-            },
-            body: JSON.stringify({
-                codigo: item.codigo,
-                cantidad: item.cantidad
-            })
-        }).catch(err => console.error("Error al registrar venta en el backend:", err));
         
-        promesasVentas.push(peticion);
+        prod.stock -= item.cantidad;
     });
-    
-    // 🌟 ESPERAMOS a que Python procese absolutamente todas las ventas y actualice el JSON
-    await Promise.all(promesasVentas);
-    
+
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n*TOTAL:* " + formatearDinero(total) + "\n";
     mensaje += "*FECHA DE RECOGIDA:* " + formatearFechaHumana(fecha) + "\n*HORA APROX:* " + hora + "\n";
-    
+
     urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + window.encodeURIComponent(mensaje);
-    
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(mensaje).then(() => {
             document.getElementById('alerta-copiado').style.display = 'block';
@@ -342,16 +345,44 @@ async function enviarPedidoFinal() { // 🌟 Agregamos async aquí
 }
 
 function finalizarProcesoPedido() {
-    localStorage.setItem('inventario_tienda', JSON.stringify(INVENTARIO_GLOBAL));
-    carrito = []; 
-    guardarCarritoEnLocalStorage(); 
-    actualizarCarritoVisual(); 
-    
-    // 🌟 En lugar de solo filtrar, obligamos a la web a traer el JSON recién guardado por Python
-    cargarProductos(); 
-    
-    document.getElementById('fecha').value = '';
-    document.getElementById('cliente').value = '';
+    const datosPedido = {
+        cliente: document.getElementById('cliente').value.trim() || "Cliente Web",
+        telefono: typeof TELEFONO_WHATSAPP !== 'undefined' ? TELEFONO_WHATSAPP : "",
+        fecha_entrega: document.getElementById('fecha').value || new Date().toISOString().split('T')[0],
+        hora_entrega: document.getElementById('hora') ? document.getElementById('hora').value : "No especificada",
+        productos: carrito.map(item => ({
+            codigo: item.codigo,
+            cantidad: item.cantidad
+        }))
+    };
+
+    console.log("[WEB] Enviando datos al servidor de Python...", datosPedido);
+
+    fetch('http://127.0.0.1:5000/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosPedido)
+    })
+        .then(response => {
+            if (!response.ok) throw new Error("Error en respuesta del servidor.");
+            console.log("[WEB] ¡Sincronizado con Python correctamente!");
+        })
+        .catch(error => {
+            console.warn("[AVISO] Python no está escuchando o está cerrado:", error);
+        })
+        .finally(() => {
+            localStorage.setItem('inventario_tienda', JSON.stringify(INVENTARIO_GLOBAL));
+            carrito = [];
+            guardarCarritoEnLocalStorage();
+            actualizarCarritoVisual();
+
+            setTimeout(() => {
+                cargarProductos();
+            }, 1500);
+
+            if (document.getElementById('fecha')) document.getElementById('fecha').value = '';
+            if (document.getElementById('cliente')) document.getElementById('cliente').value = '';
+        });
 }
 
 function ejecutarCopiadoAlternativo(texto) {
@@ -363,6 +394,6 @@ function ejecutarCopiadoAlternativo(texto) {
     finalizarProcesoPedido();
 }
 
-function abrirChatManual() { 
-    if (urlGlobalWhatsApp) window.open(urlGlobalWhatsApp, '_blank'); 
+function abrirChatManual() {
+    if (urlGlobalWhatsApp) window.open(urlGlobalWhatsApp, '_blank');
 }
