@@ -31,7 +31,7 @@
             </div>
             
             <div class="productos" id="lista-productos">
-                </div>
+            </div>
         </div>
         
         <div class="carrito">
@@ -41,7 +41,7 @@
             </div>
             
             <div id="items-carrito">
-                </div>
+            </div>
             
             <h3 id="total-carrito" style="font-size: 20px; margin-top: 15px; display: flex; justify-content: space-between;">
                 <span>Total:</span> <span id="total-monto">$0.00</span>
@@ -87,19 +87,23 @@
                 <button id="btn-chat-manual" class="btn" style="background:var(--primary); margin:0; width:100%;">Abrir Chat Directo</button>
             </div>
         </div>
+    </div>
+
     <div id="carrito-flotante" class="carrito-flotante" onclick="document.querySelector('.carrito').scrollIntoView({behavior: 'smooth'})">
         🛒
         <span id="badge-flotante" class="badge-flotante">0</span>
+    </div> 
+
     <div id="modal-despacho" class="modal-despacho" style="display: none;">
-    <div class="modal-contenido">
-        <span class="btn-cerrar-modal">&times;</span>
-        <h2>📦 Resumen de Carga para Despacho</h2>
-        <div id="detalle-despacho-productos" class="grid-despacho">
+        <div class="modal-contenido">
+            <span class="btn-cerrar-modal">&times;</span>
+            <h2>📦 Resumen de Carga para Despacho</h2>
+            <div id="detalle-despacho-productos" class="grid-despacho">
             </div>
-        <div class="modal-acciones">
-            <button id="btn-imprimir-despacho" class="btn-modal-print">Imprimir / Guardar PDF</button>
+            <div class="modal-acciones">
+                <button id="btn-imprimir-despacho" class="btn-modal-print">Imprimir / Guardar PDF</button>
+            </div>
         </div>
     </div>
-</div>
 </body>
 </html>

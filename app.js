@@ -25,6 +25,15 @@ function setupEventListeners() {
     document.getElementById('btn-vaciar').addEventListener('click', vaciarCarrito);
     document.getElementById('btn-enviar-pedido').addEventListener('click', enviarPedidoFinal);
     document.getElementById('btn-chat-manual').addEventListener('click', abrirChatManual);
+
+    // Funcionalidad de doble clic para previsualizar despacho
+    const btnEnviar = document.getElementById('btn-enviar-pedido');
+    if (btnEnviar) {
+        btnEnviar.addEventListener('dblclick', (e) => {
+            e.preventDefault(); 
+            abrirModalDespacho();
+        });
+    }
 }
 
 function configuringCamposFecha() {
@@ -101,7 +110,7 @@ function cargarProductos() {
             filtrarCatalogo();
         })
         .catch(error => {
-            console.error('Error al cargar el inventario desde productos.json:', error);
+            console.error('Error al cargar inventario:', error);
             if (inventarioLocal.length > 0) {
                 INVENTARIO_GLOBAL = inventarioLocal;
                 filtrarCatalogo();
@@ -120,16 +129,13 @@ function renderizarTarjetasHTML(productosAMostrar) {
     }
 
     productosAMostrar.forEach(prod => {
-        // CORRECCIÓN: Usamos directamente el stock del objeto porque ya contempla el carrito
         const stockDisponibleReal = prod.stock; 
-
         const esAgotado = stockDisponibleReal <= 0;
         const textoStock = esAgotado ? 'Agotado' : `Disponibles: ${stockDisponibleReal}`;
         const claseStock = esAgotado ? 'producto-stock agotado' : 'producto-stock';
 
         let nombreImagen = prod.imagen ? prod.imagen.split(/[/\\\\]/).pop() : '';
         let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
-
         const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
         contenedor.innerHTML += `
@@ -189,7 +195,7 @@ function agregarAlCarrito(codigo) {
         } else {
             carrito.push({ codigo: codigo, cantidad: 1 });
         }
-        producto.stock -= 1; // Reducimos el stock local de inmediato
+        producto.stock -= 1; 
         guardarCarritoEnLocalStorage();
         actualizarCarritoVisual();
         filtrarCatalogo();
@@ -227,7 +233,7 @@ function vaciarCarrito() {
     if (confirm("¿Estás seguro de vaciar el pedido?")) {
         carrito = [];
         guardarCarritoEnLocalStorage();
-        cargarProductos(); // Recargamos para devolver el stock original
+        cargarProductos(); 
     }
 }
 
@@ -288,6 +294,7 @@ function actualizarCarritoVisual() {
     if (txtMonto) txtMonto.innerText = formatearDinero(totalGeneral);
 }
 
+// CORRECCIÓN: Optimización del envío de pedido
 async function enviarPedidoFinal() {
     if (carrito.length === 0) {
         alert("Tu carrito está vacío");
@@ -315,6 +322,7 @@ async function enviarPedidoFinal() {
     mensaje += "*PRODUCTOS SOLICITADOS:*\n";
 
     let total = 0;
+    const productosParaAPI = [];
 
     carrito.forEach(item => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
@@ -325,6 +333,7 @@ async function enviarPedidoFinal() {
         total += subtotal;
 
         mensaje += `*${item.cantidad}x* [${prod.codigo}] ${prod.articulo} ➔ ${formatearDinero(subtotal)}\n`;
+        productosParaAPI.push({ codigo: item.codigo, cantidad: item.cantidad });
     });
 
     mensaje += "\n━━━━━━━━━━━━━━━━━━━━━\n";
@@ -337,41 +346,22 @@ async function enviarPedidoFinal() {
         telefono: "",
         fecha_entrega: fecha,
         hora_entrega: hora,
-        productos: carrito.map(item => ({
-            codigo: item.codigo,
-            cantidad: item.cantidad
-        }))
+        productos: productosParaAPI
     };
 
-    // Intentar guardar en la API externa primero
-    try {
-        console.log("[WEB] Enviando pedido a API:", datosPedido);
-        await fetch("https://api.tudominio.com/pedido", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(datosPedido)
-        });
-    } catch (error) {
-        console.error("[ERROR API]", error);
-    }
+    // 1. Abrir WhatsApp Inmediatamente para evitar bloqueos del navegador
+    urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + encodeURIComponent(mensaje);
+    window.open(urlGlobalWhatsApp, "_blank");
 
-    // Intentar enviar al servidor Python local de respaldo
-    try {
-        console.log("[WEB] Enviando datos a Python local...");
-        await fetch('http://127.0.0.1:5000/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datosPedido)
-        });
-    } catch (error) {
-        console.warn("[AVISO] Python local no disponible");
-    }
+    // 2. Intentar enviar al servidor Python local de respaldo (Sin bloquear)
+    fetch('http://127.0.0.1:5000/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosPedido)
+    }).then(() => console.log("[WEB] Datos enviados a Python local"))
+      .catch(() => console.warn("[AVISO] Python local no disponible"));
 
-    // Abrir WhatsApp
-    const urlWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + encodeURIComponent(mensaje);
-    window.open(urlWhatsApp, "_blank");
-
-    // Limpieza de estados
+    // 3. Limpieza de estados
     localStorage.setItem("inventario_tienda", JSON.stringify(INVENTARIO_GLOBAL));
     carrito = [];
     guardarCarritoEnLocalStorage();
@@ -383,46 +373,8 @@ async function enviarPedidoFinal() {
     setTimeout(() => { cargarProductos(); }, 1500);
 }
 
-function ejecutarCopiadoAlternativo(texto) {
-    const textarea = document.createElement("textarea");
-    textarea.value = texto; 
-    document.body.appendChild(textarea);
-    textarea.select(); 
-    document.execCommand("copy"); 
-    document.body.removeChild(textarea);
-    
-    if(document.getElementById('alerta-copiado')) {
-        document.getElementById('alerta-copiado').style.display = 'block';
-    }
-    window.open(urlGlobalWhatsApp, '_blank');
-}
-
 function abrirChatManual() {
     if (urlGlobalWhatsApp) window.open(urlGlobalWhatsApp, '_blank');
-}
-
-function setupEventListeners() {
-    document.getElementById('buscador').addEventListener('input', filtrarCatalogo);
-
-    document.querySelectorAll('.btn-categoria').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const categoria = e.target.getAttribute('data-cat');
-            seleccionarCategoria(categoria, e.target);
-        });
-    });
-
-    document.getElementById('btn-vaciar').addEventListener('click', vaciarCarrito);
-    document.getElementById('btn-enviar-pedido').addEventListener('click', enviarPedidoFinal);
-    document.getElementById('btn-chat-manual').addEventListener('click', abrirChatManual);
-
-    // ✨ NUEVO: Doble clic en el botón de enviar pedido para previsualizar despacho
-    const btnEnviar = document.getElementById('btn-enviar-pedido');
-    if (btnEnviar) {
-        btnEnviar.addEventListener('dblclick', (e) => {
-            e.preventDefault(); // Evita que se dispare el envío normal por WhatsApp
-            abrirModalDespacho();
-        });
-    }
 }
 
 function abrirModalDespacho() {
@@ -436,18 +388,16 @@ function abrirModalDespacho() {
     
     if (!contenedorDetalle || !modal) return;
     
-    contenedorDetalle.innerHTML = ''; // Limpiar contenido previo
+    contenedorDetalle.innerHTML = ''; 
 
     carrito.forEach(item => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
         if (!prod) return;
 
-        // Resolver la ruta de la imagen tal cual lo haces en el catálogo
         let nombreImagen = prod.imagen ? prod.imagen.split(/[/\\\\]/).pop() : '';
         let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
         const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-        // Construir la fila del producto para despacho
         contenedorDetalle.innerHTML += `
             <div class="fila-despacho">
                 <img src="${rutaImagen}" alt="${articuloLimpio}" class="img-despacho" onerror="this.onerror=null; this.src='https://placehold.co/70?text=Prod'">
@@ -462,21 +412,17 @@ function abrirModalDespacho() {
         `;
     });
 
-    // Mostrar el modal con flex layout
     modal.style.display = 'flex';
 
-    // Configurar eventos de cierre internos de la ventana modal
     const btnCerrar = modal.querySelector('.btn-cerrar-modal');
     if (btnCerrar) {
         btnCerrar.onclick = () => { modal.style.display = 'none'; };
     }
 
-    // Cerrar si hacen clic fuera del cuadro blanco
     modal.onclick = (e) => {
         if (e.target === modal) { modal.style.display = 'none'; }
     };
 
-    // Funcionalidad extra: Botón para imprimir el reporte de entrega rápidamente
     const btnImprimir = document.getElementById('btn-imprimir-despacho');
     if (btnImprimir) {
         btnImprimir.onclick = () => {
