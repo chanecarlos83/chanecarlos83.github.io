@@ -12,13 +12,13 @@ window.addEventListener('load', () => {
     configurarTema();
     configuringCamposFecha();
     recuperarCarritoDeLocalStorage();
-    
+
     // --- NUEVO: Recuperar nombre del cliente de visitas anteriores ---
     const clienteGuardado = localStorage.getItem('nombre_cliente_dayh');
     if (clienteGuardado && document.getElementById('cliente')) {
         document.getElementById('cliente').value = clienteGuardado;
     }
-    
+
     cargarProductos();
     setupEventListeners();
 });
@@ -119,7 +119,7 @@ function cargarProductos() {
     fetch('productos.json?v=' + Date.now())
         .then(response => response.json())
         .then(productosJson => {
-            INVENTARIO_GLOBAL = productosJson.map((prodJson, index) => {
+            INVENTARIO_GLOBAL = productosJson.map((prodJson) => {
                 const itemEnCarrito = carrito.find(c => c.codigo === prodJson.codigo);
                 const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
 
@@ -131,9 +131,8 @@ function cargarProductos() {
 
                 let stockActualizado = stockLimpio - cantidadEnCarrito;
 
-                // Para demostrar los Destacados, tomaremos los primeros 3 productos con inventario.
-                let esDestacado = false;
-                if (index < 3) esDestacado = true;
+                // Usar el valor real del JSON para "destacado"
+                let esDestacado = prodJson.destacado === true;
 
                 return {
                     ...prodJson,
@@ -205,11 +204,11 @@ function limpiarAcentos(texto) {
 function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     const stockDisponibleReal = prod.stock;
     const esAgotado = stockDisponibleReal <= 0;
-    
+
     // --- NUEVO: Lógica visual de Stock Crítico ---
     let textoStock = `Disponibles: ${stockDisponibleReal}`;
     let claseStock = 'producto-stock';
-    
+
     if (esAgotado) {
         textoStock = '❌ Agotado';
         claseStock = 'producto-stock agotado';
@@ -233,23 +232,23 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     const badgeDestacado = (!esSeccionDestacada && prod.destacado) ? `<div class="badge-destacado">OFERTA</div>` : '';
 
     return `
-        <div class="producto-card">
-            ${badgeDestacado}
-            <div>
-                <div class="producto-codigo">CÓDIGO: ${prod.codigo}</div>
-                <div class="img-wrapper">
-                    ${btnIzq}
-                    <img id="${idAtributoImagen}" src="${rutaImagen}" alt="${articuloLimpio}" onerror="this.onerror=null; this.src='https://placehold.co/300?text=${encodeURIComponent(articuloLimpio)}'">
-                    ${btnDer}
-                </div>
-                <h3>${articuloLimpio}</h3>
-                <div class="${claseStock}">${textoStock}</div>
-                <p style="color: var(--primary-light); font-weight: 700; font-size: 18px; margin: 0 0 8px 0;">${formatearDinero(prod.precio)}</p>
+    <div class="producto-card">
+        ${badgeDestacado}
+        <div>
+            <div class="producto-codigo">CÓDIGO: ${prod.codigo}</div>
+            <div class="img-wrapper">
+                ${btnIzq}
+                <img id="${idAtributoImagen}" src="${rutaImagen}" alt="${articuloLimpio}" onerror="this.onerror=null; this.src='https://placehold.co/300?text=${encodeURIComponent(articuloLimpio)}'">
+                ${btnDer}
             </div>
-            <button class="btn" onclick="agregarAlCarritoGlobal('${prod.codigo}')" ${esAgotado ? 'disabled' : ''}>
-                ${esAgotado ? 'Sin existencias' : 'Agregar'}
-            </button>
+            <h3>${articuloLimpio}</h3>
+            <div class="${claseStock}">${textoStock}</div>
+            <p style="color: var(--primary-light); font-weight: 700; font-size: 18px; margin: 0 0 8px 0;">${formatearDinero(prod.precio)}</p>
         </div>
+        <button class="btn" onclick="agregarAlCarritoGlobal('${prod.codigo}')" ${esAgotado ? 'disabled' : ''}>
+            ${esAgotado ? 'Sin existencias' : 'Agregar'}
+        </button>
+    </div>
     `;
 }
 
@@ -295,7 +294,7 @@ function renderizarTarjetasHTML(productosAMostrar) {
 // --- ACTUALIZADO: Buscador que ignora acentos ---
 function filtrarCatalogo() {
     const textoBusqueda = limpiarAcentos(document.getElementById('buscador').value.trim());
-    
+
     const productosFiltrados = INVENTARIO_GLOBAL.filter(prod => {
         const nombreValido = prod.articulo ? limpiarAcentos(prod.articulo) : "";
         const codigoValido = prod.codigo ? prod.codigo.toLowerCase() : "";
@@ -401,17 +400,17 @@ function actualizarCarritoVisual() {
         const sinStockMas = prod.stock <= 0;
 
         contenedor.innerHTML += `
-            <div class="item-linea">
-                <div class="item-info">
-                    <span class="item-nombre">[${prod.codigo}] ${prod.articulo}</span>
-                    <span class="item-precio">${formatearDinero(precioSeguro)} c/u</span>
-                </div>
-                <div class="item-controles">
-                    <button class="btn-qty" onclick="cambiarCantidad('${prod.codigo}', -1)">-</button>
-                    <span class="item-cant">${item.cantidad}</span>
-                    <button class="btn-qty" onclick="cambiarCantidad('${prod.codigo}', 1)" ${sinStockMas ? 'disabled' : ''}>+</button>
-                </div>
+        <div class="item-linea">
+            <div class="item-info">
+                <span class="item-nombre">[${prod.codigo}] ${prod.articulo}</span>
+                <span class="item-precio">${formatearDinero(precioSeguro)} c/u</span>
             </div>
+            <div class="item-controles">
+                <button class="btn-qty" onclick="cambiarCantidad('${prod.codigo}', -1)">-</button>
+                <span class="item-cant">${item.cantidad}</span>
+                <button class="btn-qty" onclick="cambiarCantidad('${prod.codigo}', 1)" ${sinStockMas ? 'disabled' : ''}>+</button>
+            </div>
+        </div>
         `;
     });
 
@@ -473,7 +472,7 @@ async function enviarPedidoFinal() {
     };
 
     urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + encodeURIComponent(mensaje);
-    
+
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         window.location.href = urlGlobalWhatsApp;
     } else {
@@ -489,7 +488,7 @@ async function enviarPedidoFinal() {
         .catch(() => console.warn("[AVISO] Python local no disponible"));
 
     localStorage.setItem("inventario_tienda", JSON.stringify(INVENTARIO_GLOBAL));
-    
+
     // --- NUEVO: Recordar el nombre del cliente ---
     localStorage.setItem("nombre_cliente_dayh", cliente);
 
@@ -528,16 +527,16 @@ function abrirModalDespacho() {
         const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
         contenedorDetalle.innerHTML += `
-            <div class="fila-despacho">
-                <img src="${rutaImagen}" alt="${articuloLimpio}" class="img-despacho" onerror="this.onerror=null; this.src='https://placehold.co/70?text=Prod'">
-                <div class="info-despacho">
-                    <h4 style="margin: 0 0 5px 0; font-size: 16px;">${articuloLimpio}</h4>
-                    <span style="font-size: 13px; color: #666;">Código: <code>${prod.codigo}</code></span>
-                </div>
-                <div class="cant-despacho">
-                    ${item.cantidad} <span style="font-size: 10px; display:block; font-weight: normal; color: #555;">Cant.</span>
-                </div>
+        <div class="fila-despacho">
+            <img src="${rutaImagen}" alt="${articuloLimpio}" class="img-despacho" onerror="this.onerror=null; this.src='https://placehold.co/70?text=Prod'">
+            <div class="info-despacho">
+                <h4 style="margin: 0 0 5px 0; font-size: 16px;">${articuloLimpio}</h4>
+                <span style="font-size: 13px; color: #666;">Código: <code>${prod.codigo}</code></span>
             </div>
+            <div class="cant-despacho">
+                ${item.cantidad} <span style="font-size: 10px; display:block; font-weight: normal; color: #555;">Cant.</span>
+            </div>
+        </div>
         `;
     });
 
