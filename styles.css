@@ -414,7 +414,6 @@ hr {
    OPTIMIZACIÓN EXCLUSIVA PARA MÓVILES Y TABLETS
    ======================================================= */
 @media (max-width: 768px) {
-    /* 1. Aprovechar el espacio de la pantalla */
     body {
         padding: 12px;
     }
@@ -423,7 +422,6 @@ hr {
         gap: 20px;
     }
 
-    /* 2. Achicar el encabezado para que no estorbe */
     .header-tienda {
         padding: 25px 15px;
         margin-bottom: 25px;
@@ -431,21 +429,19 @@ hr {
     }
 
     .header-tienda h1 {
-        font-size: 30px; /* Letra más adaptable al celular */
+        font-size: 30px;
     }
 
     .header-tienda p {
         font-size: 14px;
     }
 
-    /* 3. ¡Magia Móvil! Categorías deslizables con el dedo */
     .categorias-barra {
-        flex-wrap: nowrap; /* Evita que se apilen hacia abajo */
-        overflow-x: auto; /* Permite deslizar a los lados */
-        padding-bottom: 15px; /* Espacio para el dedo/scroll */
-        -webkit-overflow-scrolling: touch; /* Deslizamiento suave en iPhone/Android */
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 15px;
+        -webkit-overflow-scrolling: touch;
         gap: 12px;
-        /* Ocultar la barra de scroll visualmente pero mantener la función */
         scrollbar-width: none; 
     }
     
@@ -454,18 +450,16 @@ hr {
     }
 
     .btn-categoria {
-        flex-shrink: 0; /* Evita que los botones se aplasten */
+        flex-shrink: 0;
         padding: 10px 16px;
         font-size: 14px;
     }
 
-    /* 4. Ajustar el buscador */
     .buscador-contenedor input {
         padding: 14px;
         font-size: 14px;
     }
 
-    /* 5. Ajustar el tamaño del carrito */
     .carrito {
         padding: 20px 15px;
         border-radius: 16px;
@@ -477,7 +471,7 @@ hr {
 }
 
 /* =======================================================
-   BOTÓN DE CARRITO FLOTANTE (Para PC y Celulares)
+   BOTÓN DE CARRITO FLOTANTE
    ======================================================= */
 .carrito-flotante {
     position: fixed;
@@ -489,7 +483,7 @@ hr {
     width: 65px;
     height: 65px;
     border-radius: 50%;
-    display: flex; /* 🌟 Ahora está activo siempre por defecto */
+    display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 8px 25px rgba(168, 85, 247, 0.6);
@@ -498,7 +492,6 @@ hr {
     transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* 🌟 EFECTO EN PC: Se agranda un poco y brilla más al pasar el mouse */
 @media (min-width: 769px) {
     .carrito-flotante:hover {
         transform: scale(1.1) translateY(-3px);
@@ -507,7 +500,6 @@ hr {
     }
 }
 
-/* EFECTO EN CELULAR: Se encoge ligeramente al presionarlo con el dedo */
 .carrito-flotante:active {
     transform: scale(0.95);
 }
@@ -530,7 +522,7 @@ hr {
     box-shadow: 0 2px 5px rgba(0,0,0,0.4);
 }
 
-/* Estilos para la ventana modal de despacho */
+/* Modal Despacho */
 .modal-despacho {
     position: fixed;
     z-index: 10000;
@@ -607,7 +599,7 @@ hr {
 .cant-despacho {
     font-size: 24px;
     font-weight: 800;
-    color: #2e7d32; /* Verde para resaltar la cantidad */
+    color: #2e7d32;
     background-color: #e8f5e9;
     padding: 5px 15px;
     border-radius: 20px;
@@ -632,10 +624,9 @@ hr {
 .btn-modal-print:hover { background-color: #01579b; }
 
 /* =======================================================
-   NUEVAS FUNCIONES: MODO CLARO, DESTACADOS Y CARRUSEL
+   NUEVAS FUNCIONES Y MODO CLARO
    ======================================================= */
 
-/* 1. MODO CLARO (Sobrescribe las variables originales) */
 body.light-mode {
     --bg: #f3f4f6; 
     --card-bg: #ffffff; 
@@ -643,7 +634,7 @@ body.light-mode {
     --text-light: #4b5563; 
     --border: #d1d5db; 
     --shadow: rgba(0, 0, 0, 0.08); 
-    --primary-light: #9333ea; /* Morado un poco más oscuro para que resalte en blanco */
+    --primary-light: #9333ea; 
 }
 
 body.light-mode .input-group input, 
@@ -657,7 +648,6 @@ body.light-mode .btn-qty {
     color: #1f2937;
 }
 
-/* Botón flotante para cambiar de tema */
 .btn-tema {
     position: absolute;
     top: 25px;
@@ -682,10 +672,9 @@ body.light-mode .btn-qty {
 }
 
 .header-tienda {
-    position: relative; /* Necesario para que el botón se coloque bien */
+    position: relative; 
 }
 
-/* 2. PRODUCTOS DESTACADOS */
 .destacados-seccion {
     margin-bottom: 10px;
 }
@@ -705,11 +694,10 @@ body.light-mode .btn-qty {
 .productos-destacados .producto-card {
     min-width: 240px;
     flex: 0 0 auto;
-    border: 2px solid var(--primary); /* Resalta el borde */
+    border: 2px solid var(--primary);
     background: linear-gradient(145deg, var(--card-bg) 0%, rgba(168,85,247,0.05) 100%);
 }
 
-/* Insignia especial para tarjetas destacadas */
 .badge-destacado {
     position: absolute;
     top: 10px;
@@ -724,9 +712,8 @@ body.light-mode .btn-qty {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* 3. CARRUSEL DE IMÁGENES */
 .img-wrapper {
-    position: relative; /* Vital para posicionar las flechas adentro */
+    position: relative; 
 }
 .carousel-btn {
     position: absolute;
@@ -754,3 +741,24 @@ body.light-mode .btn-qty {
 }
 .carousel-btn.left { left: 5px; }
 .carousel-btn.right { right: 5px; }
+
+/* =======================================================
+   NUEVO: ALERTA DE STOCK CRÍTICO (ÚLTIMAS PIEZAS)
+   ======================================================= */
+.producto-stock.stock-critico {
+    background: rgba(249, 115, 22, 0.15); 
+    color: #f97316;                       
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+body.light-mode .producto-stock.stock-critico {
+    background: #ffedd5;
+    color: #ea580c;
+    border-color: #fed7aa;
+}

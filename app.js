@@ -12,6 +12,13 @@ window.addEventListener('load', () => {
     configurarTema();
     configuringCamposFecha();
     recuperarCarritoDeLocalStorage();
+    
+    // --- NUEVO: Recuperar nombre del cliente de visitas anteriores ---
+    const clienteGuardado = localStorage.getItem('nombre_cliente_dayh');
+    if (clienteGuardado && document.getElementById('cliente')) {
+        document.getElementById('cliente').value = clienteGuardado;
+    }
+    
     cargarProductos();
     setupEventListeners();
 });
@@ -183,23 +190,34 @@ window.moverImagenCarrusel = function (codigo, direccion) {
     let nombreImagen = rutaCruda ? rutaCruda.split(/[/\\\\]/).pop() : '';
     let nuevaRuta = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://placehold.co/300';
 
-    // Actualizamos imagen normal si existe
     const imgNormal = document.getElementById(`img-carrusel-${codigo}`);
     if (imgNormal) imgNormal.src = nuevaRuta;
 
-    // Actualizamos imagen de destacados si existe
     const imgDestacado = document.getElementById(`img-carrusel-dest-${codigo}`);
     if (imgDestacado) imgDestacado.src = nuevaRuta;
 };
 
-// Función maestra para crear el HTML de una tarjeta
+// --- NUEVO: Función para quitar acentos y hacer búsquedas más inteligentes ---
+function limpiarAcentos(texto) {
+    return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     const stockDisponibleReal = prod.stock;
     const esAgotado = stockDisponibleReal <= 0;
-    const textoStock = esAgotado ? 'Agotado' : `Disponibles: ${stockDisponibleReal}`;
-    const claseStock = esAgotado ? 'producto-stock agotado' : 'producto-stock';
+    
+    // --- NUEVO: Lógica visual de Stock Crítico ---
+    let textoStock = `Disponibles: ${stockDisponibleReal}`;
+    let claseStock = 'producto-stock';
+    
+    if (esAgotado) {
+        textoStock = '❌ Agotado';
+        claseStock = 'producto-stock agotado';
+    } else if (stockDisponibleReal <= 3) {
+        textoStock = `🔥 ¡Últimas ${stockDisponibleReal} piezas!`;
+        claseStock = 'producto-stock stock-critico';
+    }
 
-    // Procesamiento de múltiples imágenes
     const arrayImagenes = obtenerArregloImagenes(prod);
     const tieneCarrusel = arrayImagenes.length > 1;
 
@@ -207,13 +225,11 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
     const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    const idImagenUnico = codigoUnicoParaID(prod.codigo, esSeccionDestacada);
+    const idAtributoImagen = esSeccionDestacada ? `img-carrusel-dest-${prod.codigo}` : `img-carrusel-${prod.codigo}`;
 
-    // Botones del carrusel
     const btnIzq = tieneCarrusel ? `<button class="carousel-btn left" onclick="moverImagenCarrusel('${prod.codigo}', -1)">◀</button>` : '';
     const btnDer = tieneCarrusel ? `<button class="carousel-btn right" onclick="moverImagenCarrusel('${prod.codigo}', 1)">▶</button>` : '';
 
-    // Si es destacado y estamos en la cuadrícula general, lo marcamos diferente visualmente
     const badgeDestacado = (!esSeccionDestacada && prod.destacado) ? `<div class="badge-destacado">OFERTA</div>` : '';
 
     return `
@@ -223,7 +239,7 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
                 <div class="producto-codigo">CÓDIGO: ${prod.codigo}</div>
                 <div class="img-wrapper">
                     ${btnIzq}
-                    <img id="img-carrusel-${idImagenUnico}" src="${rutaImagen}" alt="${articuloLimpio}" onerror="this.onerror=null; this.src='https://placehold.co/300?text=${encodeURIComponent(articuloLimpio)}'">
+                    <img id="${idAtributoImagen}" src="${rutaImagen}" alt="${articuloLimpio}" onerror="this.onerror=null; this.src='https://placehold.co/300?text=${encodeURIComponent(articuloLimpio)}'">
                     ${btnDer}
                 </div>
                 <h3>${articuloLimpio}</h3>
@@ -237,16 +253,10 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     `;
 }
 
-// Prevenir ID duplicados entre la sección de destacados y el catálogo general
-function codigoUnicoParaID(codigo, esSeccionDestacada) {
-    return esSeccionDestacada ? `dest-${codigo}` : codigo;
-}
-
 window.agregarAlCarritoGlobal = function (codigo) {
     agregarAlCarrito(codigo);
 }
 
-// --- 3. SECCIÓN DE DESTACADOS ---
 function renderizarDestacados() {
     const contenedorDestacados = document.getElementById('lista-destacados');
     const seccionCompleta = document.getElementById('seccion-destacados');
@@ -267,10 +277,6 @@ function renderizarDestacados() {
     });
 }
 
-// -------------------------------------------------------------
-// Funciones originales del carrito y filtrado
-// -------------------------------------------------------------
-
 function renderizarTarjetasHTML(productosAMostrar) {
     const contenedor = document.getElementById('lista-productos');
     if (!contenedor) return;
@@ -286,10 +292,12 @@ function renderizarTarjetasHTML(productosAMostrar) {
     });
 }
 
+// --- ACTUALIZADO: Buscador que ignora acentos ---
 function filtrarCatalogo() {
-    const textoBusqueda = document.getElementById('buscador').value.toLowerCase().trim();
+    const textoBusqueda = limpiarAcentos(document.getElementById('buscador').value.trim());
+    
     const productosFiltrados = INVENTARIO_GLOBAL.filter(prod => {
-        const nombreValido = prod.articulo ? prod.articulo.toLowerCase() : "";
+        const nombreValido = prod.articulo ? limpiarAcentos(prod.articulo) : "";
         const codigoValido = prod.codigo ? prod.codigo.toLowerCase() : "";
         const categoriaValida = prod.categoria ? prod.categoria.toLowerCase() : "general";
 
@@ -465,13 +473,14 @@ async function enviarPedidoFinal() {
     };
 
     urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + encodeURIComponent(mensaje);
-    // Si es un dispositivo móvil, usamos href para evitar el bloqueo de popups
+    
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         window.location.href = urlGlobalWhatsApp;
     } else {
         window.open(urlGlobalWhatsApp, "_blank");
     }
 
+    // El servidor Python local en TIENDA DAYH.py ya recibe y procesa esto perfectamente.
     fetch('http://127.0.0.1:5000/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -480,11 +489,14 @@ async function enviarPedidoFinal() {
         .catch(() => console.warn("[AVISO] Python local no disponible"));
 
     localStorage.setItem("inventario_tienda", JSON.stringify(INVENTARIO_GLOBAL));
+    
+    // --- NUEVO: Recordar el nombre del cliente ---
+    localStorage.setItem("nombre_cliente_dayh", cliente);
+
     carrito = [];
     guardarCarritoEnLocalStorage();
     actualizarCarritoVisual();
 
-    if (document.getElementById("cliente")) document.getElementById("cliente").value = "";
     if (document.getElementById("fecha")) document.getElementById("fecha").value = "";
 
     setTimeout(() => { cargarProductos(); }, 1500);

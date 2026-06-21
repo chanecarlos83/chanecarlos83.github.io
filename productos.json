@@ -5,7 +5,8 @@
         "precio": 5.0,
         "stock": 4,
         "categoria": "Papeleria",
-        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_a1_1781678496.png"
+        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_a1_1781678496.png",
+        "destacado": false
     },
     {
         "codigo": "a2",
@@ -13,7 +14,8 @@
         "precio": 6.0,
         "stock": 1,
         "categoria": "Papeleria",
-        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_a2_1781678652.png"
+        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_a2_1781678652.png",
+        "destacado": false
     },
     {
         "codigo": "d1",
@@ -21,6 +23,7 @@
         "precio": 120.0,
         "stock": 1,
         "categoria": "Ropa",
-        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_d1_1781847612.png"
+        "imagen": "C:\\Users\\Diana\\OneDrive\\Escritorio\\TIENDA DAYH POOS\\aplicacion\\imagenes_productos\\IMG_d1_1781847612.png",
+        "destacado": false
     }
 ]
