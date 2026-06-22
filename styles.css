@@ -30,6 +30,7 @@ body {
     border-radius: 20px; 
     box-shadow: 0 10px 25px -5px var(--shadow);
     border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative; 
 }
 
 .header-tienda h1 { 
@@ -98,6 +99,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative; 
 }
 
 .producto-card img { 
@@ -410,32 +412,13 @@ hr {
     line-height: 1.5; 
 }
 
-/* =======================================================
-   OPTIMIZACIÓN EXCLUSIVA PARA MÓVILES Y TABLETS
-   ======================================================= */
 @media (max-width: 768px) {
-    body {
-        padding: 12px;
-    }
-
-    .container {
-        gap: 20px;
-    }
-
-    .header-tienda {
-        padding: 25px 15px;
-        margin-bottom: 25px;
-        border-radius: 16px;
-    }
-
-    .header-tienda h1 {
-        font-size: 30px;
-    }
-
-    .header-tienda p {
-        font-size: 14px;
-    }
-
+    body { padding: 12px; }
+    .container { gap: 20px; }
+    .header-tienda { padding: 25px 15px; margin-bottom: 25px; border-radius: 16px; }
+    .header-tienda h1 { font-size: 30px; }
+    .header-tienda p { font-size: 14px; }
+    
     .categorias-barra {
         flex-wrap: nowrap;
         overflow-x: auto;
@@ -444,35 +427,13 @@ hr {
         gap: 12px;
         scrollbar-width: none; 
     }
-    
-    .categorias-barra::-webkit-scrollbar {
-        display: none;
-    }
-
-    .btn-categoria {
-        flex-shrink: 0;
-        padding: 10px 16px;
-        font-size: 14px;
-    }
-
-    .buscador-contenedor input {
-        padding: 14px;
-        font-size: 14px;
-    }
-
-    .carrito {
-        padding: 20px 15px;
-        border-radius: 16px;
-    }
-
-    .carrito-header h2 {
-        font-size: 20px;
-    }
+    .categorias-barra::-webkit-scrollbar { display: none; }
+    .btn-categoria { flex-shrink: 0; padding: 10px 16px; font-size: 14px; }
+    .buscador-contenedor input { padding: 14px; font-size: 14px; }
+    .carrito { padding: 20px 15px; border-radius: 16px; }
+    .carrito-header h2 { font-size: 20px; }
 }
 
-/* =======================================================
-   BOTÓN DE CARRITO FLOTANTE
-   ======================================================= */
 .carrito-flotante {
     position: fixed;
     bottom: 30px;
@@ -500,9 +461,7 @@ hr {
     }
 }
 
-.carrito-flotante:active {
-    transform: scale(0.95);
-}
+.carrito-flotante:active { transform: scale(0.95); }
 
 .badge-flotante {
     position: absolute;
@@ -537,7 +496,7 @@ hr {
 }
 
 .modal-contenido {
-    background-color: #fff;
+    background-color: var(--card-bg);
     padding: 25px;
     border-radius: 12px;
     width: 90%;
@@ -545,8 +504,9 @@ hr {
     max-height: 85vh;
     overflow-y: auto;
     position: relative;
-    color: #333;
+    color: var(--text);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
 }
 
 .btn-cerrar-modal {
@@ -555,9 +515,9 @@ hr {
     right: 20px;
     font-size: 30px;
     cursor: pointer;
-    color: #999;
+    color: var(--text-light);
 }
-.btn-cerrar-modal:hover { color: #333; }
+.btn-cerrar-modal:hover { color: var(--text); }
 
 .grid-despacho {
     display: flex;
@@ -571,47 +531,42 @@ hr {
     align-items: center;
     gap: 20px;
     padding: 12px;
-    border: 1px solid #eee;
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background-color: #f9f9f9;
+    background-color: rgba(0,0,0,0.1);
 }
 
 .img-despacho {
     width: 70px;
     height: 70px;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 6px;
-    border: 1px solid #ddd;
+    background-color: #fff;
+    border: 1px solid var(--border);
 }
 
-.info-despacho {
-    flex-grow: 1;
-}
-
+.info-despacho { flex-grow: 1; }
+.info-despacho h4 { color: var(--text); }
 .info-despacho code {
-    background-color: #eef;
+    background-color: var(--bg);
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: bold;
-    color: #333;
+    color: var(--primary-light);
 }
 
 .cant-despacho {
     font-size: 24px;
     font-weight: 800;
-    color: #2e7d32;
-    background-color: #e8f5e9;
+    color: #fff;
+    background-color: var(--primary);
     padding: 5px 15px;
     border-radius: 20px;
     min-width: 50px;
     text-align: center;
 }
 
-.modal-acciones {
-    margin-top: 25px;
-    text-align: right;
-}
-
+.modal-acciones { margin-top: 25px; text-align: right; }
 .btn-modal-print {
     background-color: #0288d1;
     color: white;
@@ -623,10 +578,7 @@ hr {
 }
 .btn-modal-print:hover { background-color: #01579b; }
 
-/* =======================================================
-   NUEVAS FUNCIONES Y MODO CLARO
-   ======================================================= */
-
+/* Modo Claro */
 body.light-mode {
     --bg: #f3f4f6; 
     --card-bg: #ffffff; 
@@ -638,15 +590,12 @@ body.light-mode {
 }
 
 body.light-mode .input-group input, 
-body.light-mode .input-group select {
-    background: #ffffff;
-    color: #1f2937;
-}
-
-body.light-mode .btn-qty {
-    background: #e5e7eb;
-    color: #1f2937;
-}
+body.light-mode .input-group select { background: #ffffff; color: #1f2937; }
+body.light-mode .btn-qty { background: #e5e7eb; color: #1f2937; }
+body.light-mode .btn-qty:disabled { background: #f3f4f6; color: #d1d5db; }
+body.light-mode .fila-despacho { background-color: #f9fafb; }
+body.light-mode .info-despacho code { background-color: #f3f4f6; color: var(--primary); }
+body.light-mode .cant-despacho { color: #fff; background-color: var(--primary); }
 
 .btn-tema {
     position: absolute;
@@ -666,23 +615,10 @@ body.light-mode .btn-qty {
     transition: all 0.3s ease;
     z-index: 10;
 }
-.btn-tema:hover {
-    transform: scale(1.1) rotate(15deg);
-    border-color: var(--primary-light);
-}
+.btn-tema:hover { transform: scale(1.1) rotate(15deg); border-color: var(--primary-light); }
 
-.header-tienda {
-    position: relative; 
-}
-
-.destacados-seccion {
-    margin-bottom: 10px;
-}
-.destacados-seccion h2 {
-    font-size: 20px;
-    color: var(--primary-light);
-    margin-bottom: 15px;
-}
+.destacados-seccion { margin-bottom: 10px; }
+.destacados-seccion h2 { font-size: 20px; color: var(--primary-light); margin-bottom: 15px; }
 .productos-destacados {
     display: flex;
     gap: 20px;
@@ -712,9 +648,6 @@ body.light-mode .btn-qty {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.img-wrapper {
-    position: relative; 
-}
 .carousel-btn {
     position: absolute;
     top: 50%;
@@ -734,17 +667,10 @@ body.light-mode .btn-qty {
     transition: all 0.2s;
     z-index: 5;
 }
-.carousel-btn:hover {
-    opacity: 1;
-    background: var(--primary);
-    transform: translateY(-50%) scale(1.1);
-}
+.carousel-btn:hover { opacity: 1; background: var(--primary); transform: translateY(-50%) scale(1.1); }
 .carousel-btn.left { left: 5px; }
 .carousel-btn.right { right: 5px; }
 
-/* =======================================================
-   NUEVO: ALERTA DE STOCK CRÍTICO (ÚLTIMAS PIEZAS)
-   ======================================================= */
 .producto-stock.stock-critico {
     background: rgba(249, 115, 22, 0.15); 
     color: #f97316;                       
@@ -757,8 +683,102 @@ body.light-mode .btn-qty {
     margin-bottom: 10px;
 }
 
-body.light-mode .producto-stock.stock-critico {
-    background: #ffedd5;
-    color: #ea580c;
-    border-color: #fed7aa;
+body.light-mode .producto-stock.stock-critico { background: #ffedd5; color: #ea580c; border-color: #fed7aa; }
+
+/* REGLAS EXCLUSIVAS DE IMPRESIÓN */
+@media print {
+    body { background: #fff !important; color: #000 !important; padding: 0; }
+    body * { display: none !important; }
+    #modal-despacho, #modal-despacho * { display: block !important; }
+    .modal-despacho { position: absolute; left: 0; top: 0; background: #fff !important; width: 100%; height: auto; display: block !important; }
+    .modal-contenido { border: none; width: 100%; max-width: 100%; box-shadow: none; padding: 0; background: #fff !important; color: #000 !important;}
+    .btn-cerrar-modal, .modal-acciones { display: none !important; }
+    .fila-despacho { border: 1px solid #000 !important; background: #fff !important; page-break-inside: avoid; }
+    .info-despacho code { background: #eee !important; color: #000 !important; border: 1px solid #ccc; }
+    .cant-despacho { background: #000 !important; color: #fff !important; border-radius: 0; }
+}
+
+/* --- ESTILOS PARA LA SECCIÓN DE EVENTOS --- */
+.eventos-seccion {
+    margin-bottom: 30px;
+    background: rgba(31, 41, 55, 0.4);
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+}
+
+.eventos-seccion h2 {
+    font-size: 20px;
+    color: var(--primary-light);
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.eventos-contenedor {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 15px;
+}
+
+.evento-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary); /* Línea de color acentuada */
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.evento-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px var(--shadow);
+    border-color: var(--primary-light);
+}
+
+.evento-titulo {
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0 0 5px 0;
+    color: var(--text);
+}
+
+.evento-fecha {
+    font-size: 13px;
+    color: var(--primary-light);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.evento-descripcion {
+    font-size: 13px;
+    color: var(--text-light);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Ajuste para el Modo Claro */
+body.light-mode .eventos-seccion {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.card-evento-interactiva {
+    border: 1px solid var(--border);
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-evento-interactiva:hover {
+    transform: translateY(-5px) scale(1.01);
+    border-color: var(--primary-light);
+    box-shadow: 0 10px 20px var(--shadow);
+}
+
+.card-evento-interactiva img {
+    transition: transform 0.5s ease;
+}
+
+.card-evento-interactiva:hover img {
+    transform: scale(1.06); /* Hace un ligero zoom en la foto del evento */
 }

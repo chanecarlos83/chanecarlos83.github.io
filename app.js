@@ -5,25 +5,121 @@ let urlGlobalWhatsApp = "";
 let INVENTARIO_GLOBAL = [];
 let carrito = [];
 
-// Control de estados para los carruseles de imágenes
 let indicesCarrusel = {};
+
+// =========================================================================
+// CONFIGURACIÓN DE EVENTOS (Actualizado con imágenes y categorías)
+// =========================================================================
+const EVENTOS_CONFIG = [
+    {
+        titulo: "👨 Día del Padre(Electronica)",
+        fecha: "21 de Junio",
+        descripcion: "¡Sorprende a papá! Haz clic aquí para descubrir electrónica y accesorios con precios especiales.",
+        categoriaVinculada: "electronica",
+        imagen: "imagenes_eventos/dia_del_padre.jpg" // <-- Ruta de la imagen del evento
+    },
+    {
+        titulo: "👨 Día del Padre(Ropa)",
+        fecha: "21 de Junio",
+        descripcion: "¡Sorprende a papá! Haz clic aquí para descubrir ropa y accesorios con precios especiales.",
+        categoriaVinculada: "ropa",
+        imagen: "imagenes_eventos/dia_del_padre.jpg" // <-- Ruta de la imagen del evento
+    },
+    {
+        titulo: " 🎓 Graduaciones(Manualidades)",
+        fecha: "Mes de Julio",
+        descripcion: "Hoy termina una etapa llena de juegos, risas y aprendizajes; mañana comienza una nueva gran aventura haciendo clic aquí.",
+        categoriaVinculada: "manualidades",
+        imagen: "imagenes_eventos/graduaciones.jpg"
+    },
+    {
+        titulo: " 🎓 Graduaciones(Ropa)",
+        fecha: "Mes de Julio",
+        descripcion: "Hoy termina una etapa llena de juegos, risas y aprendizajes; mañana comienza una nueva gran aventura haciendo clic aquí.",
+        categoriaVinculada: "ropa",
+        imagen: "imagenes_eventos/graduaciones.jpg"
+    }
+];
 
 window.addEventListener('load', () => {
     configurarTema();
     configuringCamposFecha();
     recuperarCarritoDeLocalStorage();
 
-    // --- NUEVO: Recuperar nombre del cliente de visitas anteriores ---
     const clienteGuardado = localStorage.getItem('nombre_cliente_dayh');
     if (clienteGuardado && document.getElementById('cliente')) {
         document.getElementById('cliente').value = clienteGuardado;
     }
 
     cargarProductos();
+    renderizarEventos();
     setupEventListeners();
 });
 
-// --- 1. LÓGICA DEL TEMA CLARO/OSCURO ---
+function renderizarEventos() {
+    const contenedor = document.getElementById('lista-eventos');
+    const seccionEventos = document.getElementById('seccion-eventos');
+    
+    if (!contenedor || !seccionEventos) return;
+
+    if (EVENTOS_CONFIG.length === 0) {
+        seccionEventos.style.display = 'none';
+        return;
+    }
+
+    seccionEventos.style.display = 'block';
+    contenedor.innerHTML = '';
+
+    EVENTOS_CONFIG.forEach(evento => {
+        // Si no se define una imagen o falla, cargará un marcador de posición gris elegante
+        const rutaImagen = evento.imagen ? evento.imagen : 'https://placehold.co/300x150?text=Evento';
+        
+        contenedor.innerHTML += `
+        <div class="producto-card card-evento-interactiva" style="cursor: pointer; text-align: left; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;" onclick="filtrarPorEvento('${evento.categoriaVinculada}')">
+            <div>
+                <div class="img-wrapper" style="height: 140px; width: 100%; overflow: hidden;">
+                    <img src="${rutaImagen}" alt="${evento.titulo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://placehold.co/300x150?text=${encodeURIComponent(evento.titulo)}'">
+                </div>
+                <div style="padding: 12px;">
+                    <h3 style="margin: 0 0 5px 0; font-size: 16px; color: var(--text);">${evento.titulo}</h3>
+                    <div style="font-size: 12px; color: var(--primary-light); font-weight: bold; margin-bottom: 6px;">📅 Temporada: ${evento.fecha}</div>
+                    <p style="font-size: 13px; color: var(--text-light); margin: 0; line-height: 1.4;">${evento.descripcion}</p>
+                </div>
+            </div>
+            <div style="padding: 0 12px 12px 12px; text-align: right;">
+                <span style="font-size: 11px; color: var(--primary-light); font-weight: bold;">Ver productos ➔</span>
+            </div>
+        </div>
+        `;
+    });
+}
+
+function filtrarPorEvento(categoria) {
+    if (!categoria) return;
+    
+    categorySeleccionada = categoria;
+    
+    document.querySelectorAll('.btn-categoria').forEach(btn => btn.classList.remove('activo'));
+    
+    document.querySelectorAll('.btn-categoria').forEach(btn => {
+        if(btn.getAttribute('data-cat') && btn.getAttribute('data-cat').toLowerCase() === categoria.toLowerCase()) {
+            btn.classList.add('activo');
+        }
+    });
+    
+    filtrarCatalogo();
+    
+    const buscadorInput = document.getElementById('buscador');
+    if (buscadorInput) {
+        buscadorInput.value = ""; 
+    }
+    
+    const seccionProductos = document.getElementById('barra-categorias');
+    if (seccionProductos) {
+        seccionProductos.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
 function configurarTema() {
     const temaGuardado = localStorage.getItem('tema_tienda');
     const btnTema = document.getElementById('btn-tema');
@@ -130,8 +226,6 @@ function cargarProductos() {
                 if (isNaN(stockLimpio)) stockLimpio = 0;
 
                 let stockActualizado = stockLimpio - cantidadEnCarrito;
-
-                // Usar el valor real del JSON para "destacado"
                 let esDestacado = prodJson.destacado === true;
 
                 return {
@@ -156,7 +250,6 @@ function cargarProductos() {
         });
 }
 
-// --- 2. LÓGICA DEL CARRUSEL DE IMÁGENES ---
 function obtenerArregloImagenes(prod) {
     if (!prod.imagen) return [];
     if (prod.imagen.includes(',')) {
@@ -178,7 +271,6 @@ window.moverImagenCarrusel = function (codigo, direccion) {
 
     indicesCarrusel[codigo] += direccion;
 
-    // Lógica circular
     if (indicesCarrusel[codigo] >= imagenes.length) {
         indicesCarrusel[codigo] = 0;
     } else if (indicesCarrusel[codigo] < 0) {
@@ -196,7 +288,6 @@ window.moverImagenCarrusel = function (codigo, direccion) {
     if (imgDestacado) imgDestacado.src = nuevaRuta;
 };
 
-// --- NUEVO: Función para quitar acentos y hacer búsquedas más inteligentes ---
 function limpiarAcentos(texto) {
     return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -205,7 +296,6 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     const stockDisponibleReal = prod.stock;
     const esAgotado = stockDisponibleReal <= 0;
 
-    // --- NUEVO: Lógica visual de Stock Crítico ---
     let textoStock = `Disponibles: ${stockDisponibleReal}`;
     let claseStock = 'producto-stock';
 
@@ -221,7 +311,7 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
     const tieneCarrusel = arrayImagenes.length > 1;
 
     let nombreImagen = arrayImagenes[0] ? arrayImagenes[0].split(/[/\\\\]/).pop() : '';
-    let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
+    let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://placehold.co/300?text=No+disponible';
     const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     const idAtributoImagen = esSeccionDestacada ? `img-carrusel-dest-${prod.codigo}` : `img-carrusel-${prod.codigo}`;
@@ -255,6 +345,9 @@ function generarHTMLTarjeta(prod, esSeccionDestacada = false) {
 window.agregarAlCarritoGlobal = function (codigo) {
     agregarAlCarrito(codigo);
 }
+
+// Asegurar que la función se asigne globalmente para los botones onclick del HTML dinámico
+window.filtrarPorEvento = filtrarPorEvento;
 
 function renderizarDestacados() {
     const contenedorDestacados = document.getElementById('lista-destacados');
@@ -291,7 +384,6 @@ function renderizarTarjetasHTML(productosAMostrar) {
     });
 }
 
-// --- ACTUALIZADO: Buscador que ignora acentos ---
 function filtrarCatalogo() {
     const textoBusqueda = limpiarAcentos(document.getElementById('buscador').value.trim());
 
@@ -432,6 +524,11 @@ async function enviarPedidoFinal() {
         return;
     }
 
+    if (!hora) {
+        alert("Por favor, selecciona una hora aproximada para tu entrega.");
+        return;
+    }
+
     if (cliente.length < 3) {
         alert("Escribe tu nombre completo.");
         return;
@@ -473,13 +570,15 @@ async function enviarPedidoFinal() {
 
     urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + encodeURIComponent(mensaje);
 
+    const divAlerta = document.getElementById('alerta-copiado');
+    if(divAlerta) divAlerta.style.display = 'block';
+
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         window.location.href = urlGlobalWhatsApp;
     } else {
         window.open(urlGlobalWhatsApp, "_blank");
     }
 
-    // El servidor Python local en TIENDA DAYH.py ya recibe y procesa esto perfectamente.
     fetch('http://127.0.0.1:5000/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -488,8 +587,6 @@ async function enviarPedidoFinal() {
         .catch(() => console.warn("[AVISO] Python local no disponible"));
 
     localStorage.setItem("inventario_tienda", JSON.stringify(INVENTARIO_GLOBAL));
-
-    // --- NUEVO: Recordar el nombre del cliente ---
     localStorage.setItem("nombre_cliente_dayh", cliente);
 
     carrito = [];
@@ -497,8 +594,10 @@ async function enviarPedidoFinal() {
     actualizarCarritoVisual();
 
     if (document.getElementById("fecha")) document.getElementById("fecha").value = "";
+    if (document.getElementById("hora")) document.getElementById("hora").value = ""; 
 
-    setTimeout(() => { cargarProductos(); }, 1500);
+    filtrarCatalogo();
+    renderizarDestacados();
 }
 
 function abrirChatManual() {
@@ -523,7 +622,7 @@ function abrirModalDespacho() {
         if (!prod) return;
 
         let nombreImagen = prod.imagen ? prod.imagen.split(/[/\\\\]/).pop() : '';
-        let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=300&auto=format&fit=crop';
+        let rutaImagen = nombreImagen ? `imagenes_productos/${nombreImagen}` : 'https://placehold.co/70?text=Prod';
         const articuloLimpio = prod.articulo.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
         contenedorDetalle.innerHTML += `
@@ -531,10 +630,10 @@ function abrirModalDespacho() {
             <img src="${rutaImagen}" alt="${articuloLimpio}" class="img-despacho" onerror="this.onerror=null; this.src='https://placehold.co/70?text=Prod'">
             <div class="info-despacho">
                 <h4 style="margin: 0 0 5px 0; font-size: 16px;">${articuloLimpio}</h4>
-                <span style="font-size: 13px; color: #666;">Código: <code>${prod.codigo}</code></span>
+                <span style="font-size: 13px; color: var(--text-light);">Código: <code>${prod.codigo}</code></span>
             </div>
             <div class="cant-despacho">
-                ${item.cantidad} <span style="font-size: 10px; display:block; font-weight: normal; color: #555;">Cant.</span>
+                ${item.cantidad} <span style="font-size: 10px; display:block; font-weight: normal; opacity: 0.8;">Cant.</span>
             </div>
         </div>
         `;
