@@ -6,12 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TIENDA DAYH - Catálogo Oficial</title>
     <link rel="stylesheet" href="styles.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="app.js"></script>
-    <!-- LIBRERÍA DE CONFETI (Añadida para el efecto visual) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Tu script actual -->
     <script src="app.js" defer></script>
 </head>
 
@@ -23,11 +21,8 @@
         <p>Tu catálogo de confianza — Elige tus productos y agenda tu pedido</p>
     </div>
 
-    <!-- 1. BANNER ROTATIVO (HERO CAROUSEL) -->
     <div class="hero-carousel-container">
-        <div class="hero-carousel-wrapper" id="hero-carousel-wrapper">
-            <!-- Los banners se insertan dinámicamente desde JS -->
-        </div>
+        <div class="hero-carousel-wrapper" id="hero-carousel-wrapper"></div>
         <button class="carousel-arrow prev" onclick="cambiarSlideCarousel(-1)">❮</button>
         <button class="carousel-arrow next" onclick="cambiarSlideCarousel(1)">❯</button>
         <div class="carousel-dots" id="carousel-dots"></div>
@@ -52,7 +47,6 @@
                 <input type="text" id="buscador" placeholder=" 🔍 ¿Qué estás buscando hoy? Escribe nombre o código...">
             </div>
 
-            <!-- 2. CATEGORÍAS CON ICONOS -->
             <div class="categorias-barra" id="barra-categorias">
                 <button class="btn-categoria activo" data-cat="todas"><span>🌐</span>Todas</button>
                 <button class="btn-categoria" data-cat="papeleria"><span>✏️</span>Papelería</button>
@@ -75,8 +69,7 @@
 
             <div id="items-carrito"></div>
 
-            <h3 id="total-carrito"
-                style="font-size: 20px; margin-top: 15px; display: flex; justify-content: space-between;">
+            <h3 id="total-carrito" style="font-size: 20px; margin-top: 15px; display: flex; justify-content: space-between;">
                 <span>Total:</span> <span id="total-monto">$0.00</span>
             </h3>
             <hr>
@@ -111,30 +104,27 @@
                 <input type="text" id="cliente" placeholder="Escribe tu nombre completo...">
             </div>
 
+            <div class="input-group">
+                <label for="metodo-pago">Método de Pago Preferido:</label>
+                <select id="metodo-pago">
+                    <option value="Efectivo al entregar">💵 Efectivo al entregar</option>
+                    <option value="Transferencia Bancaria">📱 Transferencia Bancaria</option>
+                </select>
+            </div>
+
             <button id="btn-enviar-pedido" class="btn">Enviar Pedido por WhatsApp</button>
 
-            <div id="alerta-copiado" class="alerta-exito" style="display: none;">
-                ¡Pedido copiado al portapapeles!<br><br>
-                Si no se abrió WhatsApp automáticamente, haz clic abajo, mantén presionado el chat de WhatsApp y
-                selecciona <strong>Pegar</strong>.
-                <br><br>
-                <button id="btn-chat-manual" class="btn" style="background:var(--primary); margin:0; width:100%;">Abrir
-                    Chat Directo</button>
-            </div>
+            <div id="alerta-copiado" class="alerta-exito" style="display: none;"></div>
         </div>
     </div>
 
-    <!-- ELEMENTOS FLOTANTES Y MODALES -->
-    <div id="carrito-flotante" class="carrito-flotante"
-        onclick="document.querySelector('.carrito').scrollIntoView({behavior: 'smooth'})">
+    <div id="carrito-flotante" class="carrito-flotante" onclick="document.querySelector('.carrito').scrollIntoView({behavior: 'smooth'})">
         🛒
         <span id="badge-flotante" class="badge-flotante">0</span>
     </div>
 
-    <!-- 3. BOTÓN VOLVER ARRIBA -->
     <button id="btn-back-to-top" class="btn-back-to-top" title="Volver arriba">▲</button>
 
-    <!-- 4. GALERÍA MODERNIZADA (LIGHTBOX) -->
     <div id="lightbox-modal" class="lightbox-modal" style="display: none;">
         <span class="lightbox-close" onclick="cerrarLightbox()">&times;</span>
         <img class="lightbox-img" id="lightbox-img" src="" alt="Visualizador">
@@ -143,8 +133,7 @@
 
     <div id="modal-despacho" class="modal-despacho" style="display: none;">
         <div class="modal-contenido">
-            <span class="btn-cerrar-modal"
-                onclick="document.getElementById('modal-despacho').style.display='none'">&times;</span>
+            <span class="btn-cerrar-modal" onclick="document.getElementById('modal-despacho').style.display='none'">&times;</span>
             <h2>📦 Resumen de Carga para Despacho</h2>
             <div id="detalle-despacho-productos" class="grid-despacho"></div>
             <div class="modal-acciones">
@@ -153,5 +142,4 @@
         </div>
     </div>
 </body>
-
 </html>

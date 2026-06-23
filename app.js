@@ -1,4 +1,4 @@
-const TELEFONO_WHATSAPP = "527442411773"; // Se mantiene por si se usa en chat manual
+const TELEFONO_WHATSAPP = "527442411773";
 let categorySeleccionada = "todas";
 let urlGlobalWhatsApp = "";
 
@@ -6,7 +6,6 @@ let INVENTARIO_GLOBAL = [];
 let carrito = [];
 let indicesCarrusel = {};
 
-// Variables Carousel 800x300 píxeles
 let currentCarouselIndex = 0;
 let carouselInterval;
 const PROMO_BANNERS = [
@@ -16,10 +15,10 @@ const PROMO_BANNERS = [
 ];
 
 const EVENTOS_CONFIG = [
-    { titulo: "👨 Día del Padre(Electronica)", fecha: "21 de Junio", descripcion: "¡Sorprende a papá! Descubre electrónica.", categoriaVinculada: "electronica", imagen: "imagenes_eventos/dia_del_padre.jpg" },
-    { titulo: "👨 Día del Padre(Ropa)", fecha: "21 de Junio", descripcion: "¡Sorprende a papá! Descubre ropa.", categoriaVinculada: "ropa", imagen: "imagenes_eventos/dia_del_padre.jpg" },
-    { titulo: " 🎓 Graduaciones(Manualidades)", fecha: "Mes de Julio", descripcion: "Termina una etapa llena de aprendizajes.", categoriaVinculada: "manualidades", imagen: "imagenes_eventos/graduaciones.jpg" },
-    { titulo: " 🎓 Graduaciones(Ropa)", fecha: "Mes de Julio", descripcion: "Termina una etapa llena de aprendizajes.", categoriaVinculada: "ropa", imagen: "imagenes_eventos/graduaciones.jpg" }
+    { titulo: "👨 Día del Padre (Electrónica)", fecha: "21 de Junio", descripcion: "¡Sorprende a papá! Descubre electrónica.", categoriaVinculada: "electronica", imagen: "imagenes_eventos/dia_del_padre.jpg" },
+    { titulo: "👨 Día del Padre (Ropa)", fecha: "21 de Junio", descripcion: "¡Sorprende a papá! Descubre ropa.", categoriaVinculada: "ropa", imagen: "imagenes_eventos/dia_del_padre.jpg" },
+    { titulo: "🎓 Graduaciones (Manualidades)", fecha: "Mes de Julio", descripcion: "Termina una etapa llena de aprendizajes.", categoriaVinculada: "manualidades", imagen: "imagenes_eventos/graduaciones.jpg" },
+    { titulo: "🎓 Graduaciones (Ropa)", fecha: "Mes de Julio", descripcion: "Termina una etapa llena de aprendizajes.", categoriaVinculada: "ropa", imagen: "imagenes_eventos/graduaciones.jpg" }
 ];
 
 window.addEventListener('load', () => {
@@ -51,24 +50,19 @@ window.addEventListener('load', () => {
         if (productoFiltrado) {
             const buscadorInput = document.getElementById('buscador');
             if (buscadorInput) {
-                // Ponemos el código en el buscador de la página
                 buscadorInput.value = productoFiltrado;
-                
-                // Forzamos el filtro del catálogo para que aparezca solo ese producto
                 categorySeleccionada = "todas"; 
                 filtrarCatalogo();
                 
-                // Hacemos scroll suave hasta el catálogo para que el cliente lo vea de golpe
                 const catalogoSeccion = document.getElementById('barra-categorias') || document.getElementById('lista-productos');
                 if (catalogoSeccion) {
                     catalogoSeccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         }
-    }, 900); // Pequeño retraso para asegurar que el archivo productos.json ya se cargó por completo
+    }, 900);
 });
 
-// MENSAJE DE CARRITO GUARDADO
 function verificarCarritoGuardadoAlEntrar() {
     if (carrito && carrito.length > 0) {
         const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
@@ -84,7 +78,6 @@ function verificarCarritoGuardadoAlEntrar() {
     }
 }
 
-// EFECTO DE CONFETI PROFESIONAL
 function lanzarEfectoConfeti() {
     if (typeof confetti === 'function') {
         confetti({ particleCount: 80, angle: 60, spread: 60, origin: { x: 0, y: 0.8 } });
@@ -175,7 +168,7 @@ function setupEventListeners() {
     });
     document.getElementById('btn-vaciar').addEventListener('click', vaciarCarrito);
     document.getElementById('btn-enviar-pedido').addEventListener('click', enviarPedidoFinal);
-    document.getElementById('btn-chat-manual').addEventListener('click', abrirChatManual);
+    if (document.getElementById('btn-chat-manual')) document.getElementById('btn-chat-manual').addEventListener('click', abrirChatManual);
     if (document.getElementById('btn-enviar-pedido')) {
         document.getElementById('btn-enviar-pedido').addEventListener('dblclick', (e) => { e.preventDefault(); abrirModalDespacho(); });
     }
@@ -185,12 +178,28 @@ function configuringCamposFecha() {
     const hoyObj = new Date();
     const hoy = `${hoyObj.getFullYear()}-${String(hoyObj.getMonth() + 1).padStart(2, '0')}-${String(hoyObj.getDate()).padStart(2, '0')}`;
 
+    // MEJORA: Array de días festivos o de descanso (Formato YYYY-MM-DD)
+    const DIAS_FESTIVOS = [
+        "2026-09-16", // Independencia
+        "2026-11-16", // Revolución (puente)
+        "2026-12-25"  // Navidad
+    ];
+
     const campoFecha = document.getElementById('fecha');
     if (campoFecha) {
         campoFecha.min = hoy;
         campoFecha.addEventListener('input', (e) => {
             const fechaSeleccionada = e.target.value;
             if (!fechaSeleccionada) return;
+            
+            // 1. Validar Días Festivos
+            if (DIAS_FESTIVOS.includes(fechaSeleccionada)) {
+                alert("⚠️ Los días festivos oficiales no realizamos entregas. Por favor selecciona otro día.");
+                e.target.value = '';
+                return;
+            }
+
+            // 2. Validar Fines de Semana
             const fechaObj = new Date(fechaSeleccionada + 'T00:00:00');
             if (fechaObj.getDay() === 0 || fechaObj.getDay() === 6) {
                 alert("⚠️ Los fines de semana no realizamos entregas. Selecciona de Lunes a Viernes.");
@@ -306,14 +315,11 @@ window.moverImagenCarrusel = function (codigo, direccion) {
     if (document.getElementById(`img-carrusel-dest-${codigo}`)) document.getElementById(`img-carrusel-dest-${codigo}`).src = nRuta;
 };
 
+// ENLACES INTELIGENTES
 window.compartirProducto = function(codigo, nombre, precio) {
-    // Detecta automáticamente la URL actual de tu página web (ej. https://tudominio.com/ o http://127.0.0.1:5500/index.html)
     const urlBase = window.location.origin + window.location.pathname;
-    
-    // Crea el enlace directo añadiendo el parámetro del código del producto
     const enlaceWebProducto = `${urlBase}?prod=${encodeURIComponent(codigo)}`;
 
-    // Estructura el mensaje de WhatsApp incluyendo el enlace a tu web
     const txt = `*¡Mira este producto en Tienda DAYH!* 🤩\n\n` +
                 `🛍️ *${nombre}*\n` +
                 `📌 Código: ${codigo}\n` +
@@ -321,15 +327,15 @@ window.compartirProducto = function(codigo, nombre, precio) {
                 `👇 Ver detalles y agregarlo al carrito aquí:\n` +
                 `${enlaceWebProducto}`;
 
-    // Abre WhatsApp con el mensaje formateado
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
 };
 
+// TARJETA CON BOTONERA DE CANTIDADES INTEGRADAS
 function generarHTMLTarjeta(prod, esDestacada = false) {
     const stock = prod.stock;
-    const esAgotado = stock <= 0;
+    const esAgotado = stock <= 0 && (!carrito.find(i => i.codigo === prod.codigo));
     let txtStock = `Disponibles: ${stock}`, cStock = 'producto-stock';
-    if (esAgotado) { txtStock = '❌ Agotado'; cStock = 'producto-stock agotado'; }
+    if (stock <= 0) { txtStock = '❌ Agotado'; cStock = 'producto-stock agotado'; }
     else if (stock <= 3) { txtStock = `🔥 ¡Últimas ${stock} pzs!`; cStock = 'producto-stock stock-critico'; }
 
     const arrImg = obtenerArregloImagenes(prod);
@@ -345,6 +351,20 @@ function generarHTMLTarjeta(prod, esDestacada = false) {
     const bIzq = arrImg.length > 1 ? `<button class="carousel-btn left" onclick="moverImagenCarrusel('${prod.codigo}', -1); event.stopPropagation();">◀</button>` : '';
     const bDer = arrImg.length > 1 ? `<button class="carousel-btn right" onclick="moverImagenCarrusel('${prod.codigo}', 1); event.stopPropagation();">▶</button>` : '';
     const badgeDestacado = (!esDestacada && prod.destacado) ? `<div class="badge-destacado">OFERTA</div>` : '';
+
+    const itemEnCarrito = carrito.find(i => i.codigo === prod.codigo);
+    let botonFilaHTML = '';
+
+    if (itemEnCarrito) {
+        botonFilaHTML = `
+        <div class="tarjeta-controles-qty">
+            <button class="tarjeta-btn-qty" onclick="cambiarCantidad('${prod.codigo}', -1)">-</button>
+            <span class="tarjeta-cant-num">${itemEnCarrito.cantidad} pzs</span>
+            <button class="tarjeta-btn-qty" onclick="cambiarCantidad('${prod.codigo}', 1)" ${stock <= 0 ? 'disabled' : ''}>+</button>
+        </div>`;
+    } else {
+        botonFilaHTML = `<button class="btn" onclick="agregarAlCarritoConEfecto('${prod.codigo}', this)" ${esAgotado ? 'disabled' : ''}>${esAgotado ? 'Sin existencias' : '🛒 Agregar'}</button>`;
+    }
 
     return `
     <div class="producto-card">
@@ -366,7 +386,7 @@ function generarHTMLTarjeta(prod, esDestacada = false) {
             <div class="${cStock}">${txtStock}</div>
             <p style="color: var(--primary-light); font-weight: 700; font-size: 16px; margin: 0 0 6px 0;">${formatearDinero(prod.precio)}</p>
         </div>
-        <button class="btn" onclick="agregarAlCarritoConEfecto('${prod.codigo}', this)" ${esAgotado ? 'disabled' : ''}>${esAgotado ? 'Sin existencias' : '🛒 Agregar'}</button>
+        ${botonFilaHTML}
     </div>`;
 }
 
@@ -401,13 +421,18 @@ function seleccionarCategoria(cat, elemento) {
     filtrarCatalogo();
 }
 
+// ANIMACIÓN DE VIBRACIÓN PARA EL CARRITO FLOTANTE
 function dispararAnimacionCarrito() {
     const elements = [document.getElementById('badge-contador'), document.getElementById('carrito-flotante')];
     elements.forEach(el => {
         if(el) {
-            el.classList.remove('animar-pop');
+            el.classList.remove('animar-pop', 'animar-shake');
             void el.offsetWidth; 
-            el.classList.add('animar-pop');
+            if (el.id === 'carrito-flotante') {
+                el.classList.add('animar-shake');
+            } else {
+                el.classList.add('animar-pop');
+            }
         }
     });
 }
@@ -523,13 +548,14 @@ function actualizarCarritoVisual() {
 }
 
 // ==========================================
-// FUNCIÓN MEJORADA: GENERAR PDF CON COLORES DE LA TIENDA
+// INTEGRACIÓN: PDF + MÉTODO DE PAGO + WHATSAPP
 // ==========================================
 async function enviarPedidoFinal() {
     if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
     const cliente = document.getElementById('cliente').value.trim();
+    const metodoPago = document.getElementById('metodo-pago') ? document.getElementById('metodo-pago').value : "No especificado";
 
     if (!fecha || !hora || cliente.length < 3) { 
         alert("Por favor completa los campos: Fecha, Hora y Nombre Completo."); 
@@ -538,16 +564,14 @@ async function enviarPedidoFinal() {
 
     lanzarEfectoConfeti();
 
-    // Instanciar jsPDF
+    // 1. INSTANCIAR Y CONFIGURAR JSPDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // --- DISEÑO Y COLORES CORPORATIVOS (Morado de styles.css) ---
-    // Fondo del encabezado: #a855f7 (RGB: 168, 85, 247)
+    // Diseño y colores corporativos
     doc.setFillColor(168, 85, 247); 
     doc.rect(0, 0, 210, 35, "F");
 
-    // Texto del encabezado
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
@@ -557,16 +581,15 @@ async function enviarPedidoFinal() {
     doc.setFontSize(10);
     doc.text("Tu catálogo de confianza — Comprobante Oficial de Pedido", 15, 26);
 
-    // --- INFORMACIÓN DEL CLIENTE Y ENVÍO ---
-    doc.setTextColor(17, 24, 39); // Gris oscuro para legibilidad
+    // Información del Cliente y Envío
+    doc.setTextColor(17, 24, 39); 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text("DATOS DEL CLIENTE", 15, 48);
+    doc.text("DATOS DEL CLIENTE Y LOGÍSTICA", 15, 48);
     
-    // Línea sutil bajo el título de sección
-    doc.setDrawColor(192, 132, 252); // Morado claro #c084fc
+    doc.setDrawColor(192, 132, 252); 
     doc.setLineWidth(0.5);
-    doc.line(15, 51, 80, 51);
+    doc.line(15, 51, 95, 51);
 
     doc.setFont("helvetica", "bold");
     doc.text("Nombre Completo:", 15, 59);
@@ -583,27 +606,39 @@ async function enviarPedidoFinal() {
     doc.setFont("helvetica", "normal");
     doc.text(hora, 55, 73);
 
-    // --- TABLA DE PRODUCTOS ---
     doc.setFont("helvetica", "bold");
-    doc.text("DETALLE DEL PEDIDO", 15, 88);
-    doc.line(15, 91, 195, 91);
+    doc.text("Método de Pago:", 15, 80);
+    doc.setFont("helvetica", "normal");
+    doc.text(metodoPago, 55, 80);
 
-    // Encabezados de columnas de la tabla
-    doc.setFillColor(249, 250, 251); // Fondo gris muy claro para la barra de títulos
-    doc.rect(15, 95, 180, 8, "F");
+    // Tabla de Productos
+    doc.setFont("helvetica", "bold");
+    doc.text("DETALLE DEL PEDIDO", 15, 93);
+    doc.line(15, 96, 195, 96);
+
+    doc.setFillColor(249, 250, 251); 
+    doc.rect(15, 100, 180, 8, "F");
     
     doc.setFontSize(10);
-    doc.text("Cant.", 18, 100);
-    doc.text("Código", 35, 100);
-    doc.text("Descripción del Artículo", 65, 100);
-    doc.text("Subtotal", 172, 100);
+    doc.text("Cant.", 18, 105);
+    doc.text("Código", 35, 105);
+    doc.text("Descripción del Artículo", 65, 105);
+    doc.text("Subtotal", 172, 105);
     
     doc.setDrawColor(229, 231, 235);
-    doc.line(15, 103, 195, 103);
+    doc.line(15, 108, 195, 108);
 
-    let yPosition = 111;
+    let yPosition = 116;
     let total = 0;
     const productosParaAPI = [];
+    
+    // Texto para WhatsApp
+    let textoMensajeWhatsApp = `*¡Hola Tienda DAYH! Generé un nuevo pedido* 📄🛒\n\n`;
+    textoMensajeWhatsApp += `👤 *Cliente:* ${cliente}\n`;
+    textoMensajeWhatsApp += `📅 *Fecha de Entrega:* ${formatearFechaHumana(fecha)}\n`;
+    textoMensajeWhatsApp += `⏰ *Hora Aproximada:* ${hora}\n`;
+    textoMensajeWhatsApp += `💳 *Forma de Pago:* ${metodoPago}\n\n`;
+    textoMensajeWhatsApp += `📦 *DETALLE DEL PEDIDO:*\n`;
 
     doc.setFont("helvetica", "normal");
     
@@ -614,75 +649,94 @@ async function enviarPedidoFinal() {
         const subtotal = prod.precio * item.cantidad; 
         total += subtotal;
         
-        // Filas intercaladas para un diseño más limpio (cebreado sutil)
+        // MEJORA: CONTROL DE PAGINACIÓN: Si se acerca al final de la página (limite ~275), crea otra
+        if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 25; // Reinicia la posición arriba en la nueva hoja
+            
+            // Re-dibujar encabezado simple de tabla en la nueva página
+            doc.setFont("helvetica", "bold");
+            doc.setFillColor(249, 250, 251); 
+            doc.rect(15, yPosition - 5, 180, 8, "F");
+            doc.text("Cant.", 18, yPosition);
+            doc.text("Código", 35, yPosition);
+            doc.text("Descripción del Artículo", 65, yPosition);
+            doc.text("Subtotal", 172, yPosition);
+            yPosition += 12;
+            doc.setFont("helvetica", "normal");
+        }
+
         if (index % 2 === 0) {
-            doc.setFillColor(253, 244, 255); // Fondo violeta extremadamente claro
+            doc.setFillColor(253, 244, 255); 
             doc.rect(15, yPosition - 5, 180, 8, "F");
         }
 
-        // Imprimir datos de las columnas
         doc.text(`${item.cantidad}x`, 18, yPosition);
         doc.text(prod.codigo, 35, yPosition);
-        
-        // Controlar texto largo del producto
         const itemNombre = prod.articulo.length > 40 ? prod.articulo.substring(0, 37) + "..." : prod.articulo;
         doc.text(itemNombre, 65, yPosition);
-        
         doc.text(formatearDinero(subtotal), 172, yPosition);
+
+        textoMensajeWhatsApp += `▪️ ${item.cantidad}x [${prod.codigo}] ${prod.articulo} - _${formatearDinero(subtotal)}_\n`;
 
         productosParaAPI.push({ codigo: item.codigo, cantidad: item.cantidad });
         yPosition += 8;
     });
 
-    // --- TOTALES Y CIERRE ---
-    doc.setDrawColor(168, 85, 247); // Línea final de cierre en color morado principal
+    doc.setDrawColor(168, 85, 247); 
     doc.setLineWidth(1);
     doc.line(15, yPosition, 195, yPosition);
     yPosition += 12;
 
-    // Caja de Total Destacada
     doc.setFillColor(243, 232, 255);
     doc.rect(120, yPosition - 6, 75, 10, "F");
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.setTextColor(107, 33, 168); // Texto morado oscuro
+    doc.setTextColor(107, 33, 168); 
     doc.text("TOTAL A PAGAR:", 125, yPosition);
     doc.text(formatearDinero(total), 172, yPosition);
 
-    // Nota de pie de página
     doc.setTextColor(156, 163, 175);
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.text("Gracias por tu preferencia. Conserva este PDF como tu comprobante de compra.", 15, yPosition + 15);
 
-    // Guardar archivo localmente con nombre limpio
+    // 2. DESCARGAR EL PDF AUTOMÁTICAMENTE
     const safeName = cliente.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     doc.save(`Pedido_${safeName}_${fecha}.pdf`);
 
-    // Mostrar alerta en interfaz
+    // 3. ENVIAR TODO AL WHATSAPP DEL DUEÑO
+    textoMensajeWhatsApp += `\n💰 *TOTAL NETO A PAGAR: ${formatearDinero(total)}*\n\n`;
+    textoMensajeWhatsApp += `⚠️ _Nota: Ya he descargado mi comprobante oficial en formato PDF en mi dispositivo._`;
+
+    const numeroDestino = typeof TELEFONO_WHATSAPP !== 'undefined' ? TELEFONO_WHATSAPP : "527442411773";
+    const urlWhatsApp = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(textoMensajeWhatsApp)}`;
+    
+    window.open(urlWhatsApp, '_blank');
+
     if (document.getElementById('alerta-copiado')) {
         const alerta = document.getElementById('alerta-copiado');
-        alerta.innerText = "¡Comprobante PDF generado con la estética de la tienda! 📄✨";
+        alerta.innerText = "¡PDF generado y Pedido enviado a WhatsApp con éxito! 📄📱";
         alerta.style.display = 'block';
     }
 
-    // Comunicación opcional con backend Python local
+    // Persistencia opcional
     fetch('http://127.0.0.1:5000/', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ cliente, fecha_entrega: fecha, hora_entrega: hora, productos: productosParaAPI }) 
+        body: JSON.stringify({ cliente, fecha_entrega: fecha, hora_entrega: hora, productos: productosParaAPI, metodo_pago: metodoPago }) 
     }).catch(() => console.warn("Python local no disponible"));
 
     localStorage.setItem("nombre_cliente_dayh", cliente);
     
-    // Limpieza de carritos y actualización de inventario visual
     carrito = [];
     guardarCarritoEnLocalStorage();
     actualizarCarritoVisual();
     
     if (document.getElementById("fecha")) document.getElementById("fecha").value = "";
     if (document.getElementById("hora")) document.getElementById("hora").value = "";
+    if (document.getElementById("metodo-pago")) document.getElementById("metodo-pago").selectedIndex = 0;
     
     filtrarCatalogo(); 
     renderizarDestacados();
@@ -783,15 +837,49 @@ window.cerrarLightbox = function() {
     if (modal) modal.style.display = 'none';
 }
 
-// BOTÓN VOLVER ARRIBA
+// MEJORA: BOTÓN VOLVER ARRIBA Y OCULTAR CARRITO FLOTANTE INTELIGENTE
 function inicializarBotónVolverArriba() {
-    const btn = document.getElementById('btn-back-to-top');
-    if (!btn) return;
+    const btnTop = document.getElementById('btn-back-to-top');
+    const btnCarritoFlotante = document.getElementById('carrito-flotante');
+    
+    if (!btnTop) return;
+    
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 400) btn.style.display = 'flex';
-        else btn.style.display = 'none';
+        // Control botón volver arriba
+        if (window.scrollY > 400) btnTop.style.display = 'flex';
+        else btnTop.style.display = 'none';
+        
+        // Control ocultar carrito flotante si el usuario ya llegó al carrito real
+        const carritoSeccion = document.querySelector('.carrito');
+        if (carritoSeccion) {
+            const rect = carritoSeccion.getBoundingClientRect();
+            // Si el tope del carrito es visible en pantalla, ocultamos el flotante
+            if (rect.top < window.innerHeight && rect.bottom >= 0) {
+                if(btnCarritoFlotante) btnCarritoFlotante.style.display = 'none';
+            } else {
+                if(btnCarritoFlotante) btnCarritoFlotante.style.display = 'flex';
+            }
+        }
     });
-    btn.addEventListener('click', () => {
+    
+    btnTop.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 }
+
+// ==========================================
+// MEJORA: SINCRONIZACIÓN MULTI-PESTAÑA
+// ==========================================
+window.addEventListener('storage', (e) => {
+    if (e.key === 'carrito_tienda') {
+        recuperarCarritoDeLocalStorage();
+        // Recargar stock e inventario sincronizado
+        let inventarioGuardado = localStorage.getItem('inventario_tienda_real');
+        if (inventarioGuardado) {
+            INVENTARIO_GLOBAL = JSON.parse(inventarioGuardado);
+        }
+        actualizarCarritoVisual();
+        filtrarCatalogo();
+        renderizarDestacados();
+    }
+});
