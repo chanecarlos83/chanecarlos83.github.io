@@ -1,4 +1,4 @@
-const TELEFONO_WHATSAPP = "527442411773";
+const TELEFONO_WHATSAPP = "527442411773"; // Se mantiene por si se usa en chat manual
 let categorySeleccionada = "todas";
 let urlGlobalWhatsApp = "";
 
@@ -7,7 +7,7 @@ let carrito = [];
 let indicesCarrusel = {};
 
 // Variables Carousel 800x300 píxeles
-let currentCarouselIndex = 1;
+let currentCarouselIndex = 0;
 let carouselInterval;
 const PROMO_BANNERS = [
     { imagen: "imagenes_promo/papa_promo.jpg", titulo: "¡Especial de Papá!", desc: "Aprovecha hasta un 30% en electrónica seleccionada." },
@@ -42,6 +42,30 @@ window.addEventListener('load', () => {
     
     renderizarEventos();
     setupEventListeners();
+
+    // NUEVA LÓGICA: Detectar si el cliente viene desde un enlace compartido de WhatsApp
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const productoFiltrado = urlParams.get('prod');
+
+        if (productoFiltrado) {
+            const buscadorInput = document.getElementById('buscador');
+            if (buscadorInput) {
+                // Ponemos el código en el buscador de la página
+                buscadorInput.value = productoFiltrado;
+                
+                // Forzamos el filtro del catálogo para que aparezca solo ese producto
+                categorySeleccionada = "todas"; 
+                filtrarCatalogo();
+                
+                // Hacemos scroll suave hasta el catálogo para que el cliente lo vea de golpe
+                const catalogoSeccion = document.getElementById('barra-categorias') || document.getElementById('lista-productos');
+                if (catalogoSeccion) {
+                    catalogoSeccion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+    }, 900); // Pequeño retraso para asegurar que el archivo productos.json ya se cargó por completo
 });
 
 // MENSAJE DE CARRITO GUARDADO
@@ -158,7 +182,9 @@ function setupEventListeners() {
 }
 
 function configuringCamposFecha() {
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoyObj = new Date();
+    const hoy = `${hoyObj.getFullYear()}-${String(hoyObj.getMonth() + 1).padStart(2, '0')}-${String(hoyObj.getDate()).padStart(2, '0')}`;
+
     const campoFecha = document.getElementById('fecha');
     if (campoFecha) {
         campoFecha.min = hoy;
@@ -281,7 +307,21 @@ window.moverImagenCarrusel = function (codigo, direccion) {
 };
 
 window.compartirProducto = function(codigo, nombre, precio) {
-    const txt = `*¡Mira este producto en Tienda DAYH!*🤩\\n\\n🛍️ *${nombre}*\\n📌 Código: ${codigo}\\n💰 Precio: ${formatearDinero(precio)}\\n\\nConsúltalo y arma tu pedido aquí en nuestro catálogo oficial.`;
+    // Detecta automáticamente la URL actual de tu página web (ej. https://tudominio.com/ o http://127.0.0.1:5500/index.html)
+    const urlBase = window.location.origin + window.location.pathname;
+    
+    // Crea el enlace directo añadiendo el parámetro del código del producto
+    const enlaceWebProducto = `${urlBase}?prod=${encodeURIComponent(codigo)}`;
+
+    // Estructura el mensaje de WhatsApp incluyendo el enlace a tu web
+    const txt = `*¡Mira este producto en Tienda DAYH!* 🤩\n\n` +
+                `🛍️ *${nombre}*\n` +
+                `📌 Código: ${codigo}\n` +
+                `💰 Precio: ${formatearDinero(precio)}\n\n` +
+                `👇 Ver detalles y agregarlo al carrito aquí:\n` +
+                `${enlaceWebProducto}`;
+
+    // Abre WhatsApp con el mensaje formateado
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
 };
 
@@ -296,7 +336,6 @@ function generarHTMLTarjeta(prod, esDestacada = false) {
     let imgN = arrImg[0] ? arrImg[0].split(/[/\\\\]/).pop() : '';
     let rImg = imgN ? `imagenes_productos/${imgN}` : 'https://placehold.co/300?text=No+disponible';
     
-    // Obtener la segunda imagen si existe para el efecto hover
     let img2N = arrImg.length > 1 ? arrImg[1].split(/[/\\\\]/).pop() : '';
     let rImg2 = img2N ? `imagenes_productos/${img2N}` : rImg;
 
@@ -483,48 +522,170 @@ function actualizarCarritoVisual() {
     if (txtMonto) txtMonto.innerText = formatearDinero(totalGeneral);
 }
 
+// ==========================================
+// FUNCIÓN MEJORADA: GENERAR PDF CON COLORES DE LA TIENDA
+// ==========================================
 async function enviarPedidoFinal() {
     if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
     const fecha = document.getElementById('fecha').value;
     const hora = document.getElementById('hora').value;
     const cliente = document.getElementById('cliente').value.trim();
 
-    if (!fecha || !hora || cliente.length < 3) { alert("Por favor completa los campos: Fecha, Hora y Nombre Completo."); return; }
+    if (!fecha || !hora || cliente.length < 3) { 
+        alert("Por favor completa los campos: Fecha, Hora y Nombre Completo."); 
+        return; 
+    }
 
     lanzarEfectoConfeti();
 
-    let mensaje = "*¡HOLA, TIENDA DAYH!*\\nQuiero agendar el siguiente pedido:\\n━━━━━━━━━━━━━━━━━━━━━\\n\\n*CLIENTE:* " + cliente + "\\n\\n*PRODUCTOS SOLICITADOS:*\\n";
-    let total = 0; const productosParaAPI = [];
+    // Instanciar jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
-    carrito.forEach(item => {
+    // --- DISEÑO Y COLORES CORPORATIVOS (Morado de styles.css) ---
+    // Fondo del encabezado: #a855f7 (RGB: 168, 85, 247)
+    doc.setFillColor(168, 85, 247); 
+    doc.rect(0, 0, 210, 35, "F");
+
+    // Texto del encabezado
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("TIENDA DAYH", 15, 18);
+    
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text("Tu catálogo de confianza — Comprobante Oficial de Pedido", 15, 26);
+
+    // --- INFORMACIÓN DEL CLIENTE Y ENVÍO ---
+    doc.setTextColor(17, 24, 39); // Gris oscuro para legibilidad
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("DATOS DEL CLIENTE", 15, 48);
+    
+    // Línea sutil bajo el título de sección
+    doc.setDrawColor(192, 132, 252); // Morado claro #c084fc
+    doc.setLineWidth(0.5);
+    doc.line(15, 51, 80, 51);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Nombre Completo:", 15, 59);
+    doc.setFont("helvetica", "normal");
+    doc.text(cliente, 55, 59);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Fecha de Entrega:", 15, 66);
+    doc.setFont("helvetica", "normal");
+    doc.text(formatearFechaHumana(fecha), 55, 66);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Hora Aproximada:", 15, 73);
+    doc.setFont("helvetica", "normal");
+    doc.text(hora, 55, 73);
+
+    // --- TABLA DE PRODUCTOS ---
+    doc.setFont("helvetica", "bold");
+    doc.text("DETALLE DEL PEDIDO", 15, 88);
+    doc.line(15, 91, 195, 91);
+
+    // Encabezados de columnas de la tabla
+    doc.setFillColor(249, 250, 251); // Fondo gris muy claro para la barra de títulos
+    doc.rect(15, 95, 180, 8, "F");
+    
+    doc.setFontSize(10);
+    doc.text("Cant.", 18, 100);
+    doc.text("Código", 35, 100);
+    doc.text("Descripción del Artículo", 65, 100);
+    doc.text("Subtotal", 172, 100);
+    
+    doc.setDrawColor(229, 231, 235);
+    doc.line(15, 103, 195, 103);
+
+    let yPosition = 111;
+    let total = 0;
+    const productosParaAPI = [];
+
+    doc.setFont("helvetica", "normal");
+    
+    carrito.forEach((item, index) => {
         const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
         if (!prod) return;
-        const subtotal = prod.precio * item.cantidad; total += subtotal;
-        mensaje += `*${item.cantidad}x* [${prod.codigo}] ${prod.articulo} ➔ ${formatearDinero(subtotal)}\\n`;
+        
+        const subtotal = prod.precio * item.cantidad; 
+        total += subtotal;
+        
+        // Filas intercaladas para un diseño más limpio (cebreado sutil)
+        if (index % 2 === 0) {
+            doc.setFillColor(253, 244, 255); // Fondo violeta extremadamente claro
+            doc.rect(15, yPosition - 5, 180, 8, "F");
+        }
+
+        // Imprimir datos de las columnas
+        doc.text(`${item.cantidad}x`, 18, yPosition);
+        doc.text(prod.codigo, 35, yPosition);
+        
+        // Controlar texto largo del producto
+        const itemNombre = prod.articulo.length > 40 ? prod.articulo.substring(0, 37) + "..." : prod.articulo;
+        doc.text(itemNombre, 65, yPosition);
+        
+        doc.text(formatearDinero(subtotal), 172, yPosition);
+
         productosParaAPI.push({ codigo: item.codigo, cantidad: item.cantidad });
+        yPosition += 8;
     });
 
-    mensaje += "\\n━━━━━━━━━━━━━━━━━━━━━\\n*TOTAL:* " + formatearDinero(total) + "\\n*FECHA DE ENTREGA:* " + formatearFechaHumana(fecha) + "\\n*HORA APROX:* " + hora + "\\n";
-    urlGlobalWhatsApp = "https://wa.me/" + TELEFONO_WHATSAPP + "?text=" + encodeURIComponent(mensaje);
+    // --- TOTALES Y CIERRE ---
+    doc.setDrawColor(168, 85, 247); // Línea final de cierre en color morado principal
+    doc.setLineWidth(1);
+    doc.line(15, yPosition, 195, yPosition);
+    yPosition += 12;
 
-    if (document.getElementById('alerta-copiado')) document.getElementById('alerta-copiado').style.display = 'block';
-    
-    setTimeout(() => {
-        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) window.location.href = urlGlobalWhatsApp;
-        else window.open(urlGlobalWhatsApp, "_blank");
-    }, 500);
+    // Caja de Total Destacada
+    doc.setFillColor(243, 232, 255);
+    doc.rect(120, yPosition - 6, 75, 10, "F");
 
-    fetch('http://127.0.0.1:5000/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente, fecha_entrega: fecha, hora_entrega: hora, productos: productosParaAPI }) })
-    .catch(() => console.warn("Python local no disponible"));
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(107, 33, 168); // Texto morado oscuro
+    doc.text("TOTAL A PAGAR:", 125, yPosition);
+    doc.text(formatearDinero(total), 172, yPosition);
+
+    // Nota de pie de página
+    doc.setTextColor(156, 163, 175);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.text("Gracias por tu preferencia. Conserva este PDF como tu comprobante de compra.", 15, yPosition + 15);
+
+    // Guardar archivo localmente con nombre limpio
+    const safeName = cliente.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`Pedido_${safeName}_${fecha}.pdf`);
+
+    // Mostrar alerta en interfaz
+    if (document.getElementById('alerta-copiado')) {
+        const alerta = document.getElementById('alerta-copiado');
+        alerta.innerText = "¡Comprobante PDF generado con la estética de la tienda! 📄✨";
+        alerta.style.display = 'block';
+    }
+
+    // Comunicación opcional con backend Python local
+    fetch('http://127.0.0.1:5000/', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ cliente, fecha_entrega: fecha, hora_entrega: hora, productos: productosParaAPI }) 
+    }).catch(() => console.warn("Python local no disponible"));
 
     localStorage.setItem("nombre_cliente_dayh", cliente);
     
+    // Limpieza de carritos y actualización de inventario visual
     carrito = [];
     guardarCarritoEnLocalStorage();
     actualizarCarritoVisual();
+    
     if (document.getElementById("fecha")) document.getElementById("fecha").value = "";
     if (document.getElementById("hora")) document.getElementById("hora").value = "";
-    filtrarCatalogo(); renderizarDestacados();
+    
+    filtrarCatalogo(); 
+    renderizarDestacados();
 }
 
 function abrirChatManual() { if (urlGlobalWhatsApp) window.open(urlGlobalWhatsApp, '_blank'); }
@@ -553,10 +714,6 @@ function abrirModalDespacho() {
     modal.querySelector('.btn-cerrar-modal').onclick = () => { modal.style.display = 'none'; };
     document.getElementById('btn-imprimir-despacho').onclick = () => { window.print(); };
 }
-
-/* =========================================================================
-   NUEVAS FUNCIONES: CAROUSEL, LIGHTBOX, BOTON ARRIBA
-   ========================================================================= */
 
 // BANNER ROTATIVO (HERO CAROUSEL)
 function inicializarHeroCarousel() {
