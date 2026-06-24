@@ -6,13 +6,8 @@ let INVENTARIO_GLOBAL = [];
 let carrito = [];
 let indicesCarrusel = {};
 
-let currentCarouselIndex = 0;
-let carouselInterval;
-const PROMO_BANNERS = [
-    { imagen: "imagenes_promo/papa_promo.jpg", titulo: "¡Especial de Papá!", desc: "Aprovecha hasta un 30% en electrónica seleccionada." },
-    { imagen: "https://placehold.co/800x300/1e1b4b/e0e7ff?text=Envío+Garantizado", titulo: "Agenda con Anticipación", desc: "Revisa nuestro calendario de entregas de Lunes a Viernes." },
-    { imagen: "https://placehold.co/800x300/031c30/e2f1ff?text=Nuevos+Ingresos", titulo: "Llegó la temporada de Graduaciones", desc: "Nuevas manualidades y detalles únicos disponibles." }
-];
+// 🔌 Inicializar la conexión WebSocket con tu servidor local
+const socket = typeof io !== 'undefined' ? io("http://127.0.0.1:5000") : null;
 
 const EVENTOS_CONFIG = [
     { titulo: "👨 Día del Padre (Electrónica)", fecha: "21 de Junio", descripcion: "¡Sorprende a papá! Descubre electrónica.", categoriaVinculada: "electronica", imagen: "imagenes_eventos/dia_del_padre.jpg" },
@@ -25,7 +20,6 @@ window.addEventListener('load', () => {
     configurarTema();
     configuringCamposFecha();
     recuperarCarritoDeLocalStorage();
-    inicializarHeroCarousel();
     inicializarBotónVolverArriba();
 
     const clienteGuardado = localStorage.getItem('nombre_cliente_dayh');
@@ -41,8 +35,11 @@ window.addEventListener('load', () => {
     
     renderizarEventos();
     setupEventListeners();
+    
+    // 🔌 Iniciar la escucha de actualizaciones de stock en vivo
+    configurarWebSockets();
 
-    // NUEVA LÓGICA: Detectar si el cliente viene desde un enlace compartido de WhatsApp
+    // DETECTAR ENLACES COMPARTIDOS
     setTimeout(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const productoFiltrado = urlParams.get('prod');
@@ -63,18 +60,53 @@ window.addEventListener('load', () => {
     }, 900);
 });
 
+// 🔌 Función para gestionar la recepción de cambios de stock
+function configurarWebSockets() {
+    if (!socket) return;
+    
+    socket.on('actualizar_stock_web', (data) => {
+        const { codigo, nuevo_stock } = data;
+        let producto = INVENTARIO_GLOBAL.find(p => p.codigo === codigo);
+        
+        if (producto) {
+            // Descontar lo que el usuario ya tiene apartado en su carrito
+            const itemEnCarrito = carrito.find(i => i.codigo === codigo);
+            const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+            
+            producto.stock = Math.max(0, nuevo_stock - cantidadEnCarrito);
+            
+            localStorage.setItem('inventario_tienda_real', JSON.stringify(INVENTARIO_GLOBAL));
+            filtrarCatalogo();
+            renderizarDestacados();
+            
+            // Notificar visualmente si el stock es crítico
+            if (producto.stock === 0) {
+                mostrarNotificacionFlotante(`❌ Se ha agotado: ${producto.articulo}`, 5000, '#7f1d1d');
+            } else if (producto.stock <= 3) {
+                mostrarNotificacionFlotante(`🔥 ¡Últimas ${producto.stock} piezas de: ${producto.articulo}!`, 5000, '#9a3412');
+            }
+        }
+    });
+}
+
+function mostrarNotificacionFlotante(mensaje, duracion = 4000, colorFondo = '#2e1065') {
+    const miniNotif = document.createElement('div');
+    miniNotif.className = 'notificacion-carrito-guardado';
+    miniNotif.style.bottom = '160px'; 
+    miniNotif.style.background = colorFondo; 
+    miniNotif.style.color = '#fff';
+    miniNotif.style.border = '1px solid rgba(255,255,255,0.2)';
+    miniNotif.style.zIndex = '9999';
+    miniNotif.innerHTML = `<span>${mensaje}</span> <button class="btn-cerrar-notif" onclick="this.parentElement.remove()" style="color:white;">✕</button>`;
+    
+    document.body.appendChild(miniNotif);
+    setTimeout(() => { if(miniNotif) miniNotif.remove(); }, duracion);
+}
+
 function verificarCarritoGuardadoAlEntrar() {
     if (carrito && carrito.length > 0) {
         const totalItems = carrito.reduce((sum, item) => sum + item.cantidad, 0);
-        const notificacion = document.createElement('div');
-        notificacion.className = 'notificacion-carrito-guardado';
-        notificacion.id = 'notif-carrito-guardado';
-        notificacion.innerHTML = `
-            <span>🛒 ¡Hola! Conservamos las <strong>${totalItems} pzs</strong> que dejaste en tu carrito anterior.</span>
-            <button class="btn-cerrar-notif" onclick="document.getElementById('notif-carrito-guardado').remove()">✕</button>
-        `;
-        document.body.appendChild(notificacion);
-        setTimeout(() => { const el = document.getElementById('notif-carrito-guardado'); if (el) el.remove(); }, 6000);
+        mostrarNotificacionFlotante(`🛒 ¡Hola! Conservamos las <strong>${totalItems} pzs</strong> que dejaste en tu carrito anterior.`, 6000, '#2e1065');
     }
 }
 
@@ -178,11 +210,10 @@ function configuringCamposFecha() {
     const hoyObj = new Date();
     const hoy = `${hoyObj.getFullYear()}-${String(hoyObj.getMonth() + 1).padStart(2, '0')}-${String(hoyObj.getDate()).padStart(2, '0')}`;
 
-    // MEJORA: Array de días festivos o de descanso (Formato YYYY-MM-DD)
     const DIAS_FESTIVOS = [
-        "2026-09-16", // Independencia
-        "2026-11-16", // Revolución (puente)
-        "2026-12-25"  // Navidad
+        "2026-09-16", 
+        "2026-11-16", 
+        "2026-12-25"  
     ];
 
     const campoFecha = document.getElementById('fecha');
@@ -192,18 +223,17 @@ function configuringCamposFecha() {
             const fechaSeleccionada = e.target.value;
             if (!fechaSeleccionada) return;
             
-            // 1. Validar Días Festivos
             if (DIAS_FESTIVOS.includes(fechaSeleccionada)) {
                 alert("⚠️ Los días festivos oficiales no realizamos entregas. Por favor selecciona otro día.");
                 e.target.value = '';
                 return;
             }
 
-            // 2. Validar Fines de Semana
             const fechaObj = new Date(fechaSeleccionada + 'T00:00:00');
             if (fechaObj.getDay() === 0 || fechaObj.getDay() === 6) {
                 alert("⚠️ Los fines de semana no realizamos entregas. Selecciona de Lunes a Viernes.");
                 e.target.value = '';
+                return;
             }
             validarHorariosDisponibles(); 
         });
@@ -218,7 +248,9 @@ function validarHorariosDisponibles() {
     if (!campoFecha || !campoHora) return;
 
     const fechaSeleccionada = campoFecha.value;
-    const hoyStr = new Date().toISOString().split('T')[0];
+    
+    const hoyObj = new Date();
+    const hoyStr = `${hoyObj.getFullYear()}-${String(hoyObj.getMonth() + 1).padStart(2, '0')}-${String(hoyObj.getDate()).padStart(2, '0')}`;
     
     Array.from(campoHora.options).forEach(opcion => {
         opcion.disabled = false; 
@@ -264,20 +296,14 @@ function guardarCarritoEnLocalStorage() { localStorage.setItem('carrito_tienda',
 function recuperarCarritoDeLocalStorage() { const guardado = localStorage.getItem('carrito_tienda'); if (guardado) { carrito = JSON.parse(guardado); } }
 
 function cargarProductos() {
-    let inventarioGuardado = localStorage.getItem('inventario_tienda_real');
-
     fetch('productos.json?v=' + Date.now())
         .then(res => res.json())
         .then(json => {
-            if (inventarioGuardado) {
-                let localData = JSON.parse(inventarioGuardado);
-                INVENTARIO_GLOBAL = json.map(prodJson => {
-                    let coincidencia = localData.find(l => l.codigo === prodJson.codigo);
-                    return coincidencia ? { ...prodJson, stock: coincidencia.stock, destacado: prodJson.destacado === true } : { ...prodJson, destacado: prodJson.destacado === true };
-                });
-            } else {
-                INVENTARIO_GLOBAL = json.map(p => ({ ...p, stock: parseInt(p.stock) || 0, destacado: p.destacado === true }));
-            }
+            INVENTARIO_GLOBAL = json.map(p => ({ 
+                ...p, 
+                stock: parseInt(p.stock) || 0, 
+                destacado: p.destacado === true 
+            }));
             
             carrito.forEach(item => {
                 let p = INVENTARIO_GLOBAL.find(ig => ig.codigo === item.codigo);
@@ -290,7 +316,13 @@ function cargarProductos() {
             actualizarCarritoVisual();
         })
         .catch(() => {
-            if (inventarioGuardado) { INVENTARIO_GLOBAL = JSON.parse(inventarioGuardado); filtrarCatalogo(); renderizarDestacados(); actualizarCarritoVisual(); }
+            let inventarioGuardado = localStorage.getItem('inventario_tienda_real');
+            if (inventarioGuardado) { 
+                INVENTARIO_GLOBAL = JSON.parse(inventarioGuardado); 
+                filtrarCatalogo(); 
+                renderizarDestacados(); 
+                actualizarCarritoVisual(); 
+            }
         });
 }
 
@@ -315,7 +347,6 @@ window.moverImagenCarrusel = function (codigo, direccion) {
     if (document.getElementById(`img-carrusel-dest-${codigo}`)) document.getElementById(`img-carrusel-dest-${codigo}`).src = nRuta;
 };
 
-// ENLACES INTELIGENTES
 window.compartirProducto = function(codigo, nombre, precio) {
     const urlBase = window.location.origin + window.location.pathname;
     const enlaceWebProducto = `${urlBase}?prod=${encodeURIComponent(codigo)}`;
@@ -330,7 +361,6 @@ window.compartirProducto = function(codigo, nombre, precio) {
     window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, '_blank');
 };
 
-// TARJETA CON BOTONERA DE CANTIDADES INTEGRADAS
 function generarHTMLTarjeta(prod, esDestacada = false) {
     const stock = prod.stock;
     const esAgotado = stock <= 0 && (!carrito.find(i => i.codigo === prod.codigo));
@@ -421,7 +451,6 @@ function seleccionarCategoria(cat, elemento) {
     filtrarCatalogo();
 }
 
-// ANIMACIÓN DE VIBRACIÓN PARA EL CARRITO FLOTANTE
 function dispararAnimacionCarrito() {
     const elements = [document.getElementById('badge-contador'), document.getElementById('carrito-flotante')];
     elements.forEach(el => {
@@ -471,7 +500,7 @@ window.agregarAlCarritoConEfecto = function(codigo, botonElement) {
             botonElement.innerHTML = textoOriginal;
         }, 1200);
     }
-}
+};
 
 window.cambiarCantidad = function(codigo, cambio) {
     const prod = INVENTARIO_GLOBAL.find(p => p.codigo === codigo);
@@ -547,9 +576,6 @@ function actualizarCarritoVisual() {
     if (txtMonto) txtMonto.innerText = formatearDinero(totalGeneral);
 }
 
-// ==========================================
-// INTEGRACIÓN: PDF + MÉTODO DE PAGO + WHATSAPP
-// ==========================================
 async function enviarPedidoFinal() {
     if (carrito.length === 0) { alert("Tu carrito está vacío"); return; }
     const fecha = document.getElementById('fecha').value;
@@ -564,75 +590,7 @@ async function enviarPedidoFinal() {
 
     lanzarEfectoConfeti();
 
-    // 1. INSTANCIAR Y CONFIGURAR JSPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Diseño y colores corporativos
-    doc.setFillColor(168, 85, 247); 
-    doc.rect(0, 0, 210, 35, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("TIENDA DAYH", 15, 18);
-    
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(10);
-    doc.text("Tu catálogo de confianza — Comprobante Oficial de Pedido", 15, 26);
-
-    // Información del Cliente y Envío
-    doc.setTextColor(17, 24, 39); 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("DATOS DEL CLIENTE Y LOGÍSTICA", 15, 48);
-    
-    doc.setDrawColor(192, 132, 252); 
-    doc.setLineWidth(0.5);
-    doc.line(15, 51, 95, 51);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Nombre Completo:", 15, 59);
-    doc.setFont("helvetica", "normal");
-    doc.text(cliente, 55, 59);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Fecha de Entrega:", 15, 66);
-    doc.setFont("helvetica", "normal");
-    doc.text(formatearFechaHumana(fecha), 55, 66);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Hora Aproximada:", 15, 73);
-    doc.setFont("helvetica", "normal");
-    doc.text(hora, 55, 73);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Método de Pago:", 15, 80);
-    doc.setFont("helvetica", "normal");
-    doc.text(metodoPago, 55, 80);
-
-    // Tabla de Productos
-    doc.setFont("helvetica", "bold");
-    doc.text("DETALLE DEL PEDIDO", 15, 93);
-    doc.line(15, 96, 195, 96);
-
-    doc.setFillColor(249, 250, 251); 
-    doc.rect(15, 100, 180, 8, "F");
-    
-    doc.setFontSize(10);
-    doc.text("Cant.", 18, 105);
-    doc.text("Código", 35, 105);
-    doc.text("Descripción del Artículo", 65, 105);
-    doc.text("Subtotal", 172, 105);
-    
-    doc.setDrawColor(229, 231, 235);
-    doc.line(15, 108, 195, 108);
-
-    let yPosition = 116;
     let total = 0;
-    const productosParaAPI = [];
-    
-    // Texto para WhatsApp
     let textoMensajeWhatsApp = `*¡Hola Tienda DAYH! Generé un nuevo pedido* 📄🛒\n\n`;
     textoMensajeWhatsApp += `👤 *Cliente:* ${cliente}\n`;
     textoMensajeWhatsApp += `📅 *Fecha de Entrega:* ${formatearFechaHumana(fecha)}\n`;
@@ -640,75 +598,147 @@ async function enviarPedidoFinal() {
     textoMensajeWhatsApp += `💳 *Forma de Pago:* ${metodoPago}\n\n`;
     textoMensajeWhatsApp += `📦 *DETALLE DEL PEDIDO:*\n`;
 
-    doc.setFont("helvetica", "normal");
-    
-    carrito.forEach((item, index) => {
-        const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
-        if (!prod) return;
+    const productosParaAPI = [];
+
+    if (!window.jspdf) {
+        console.warn("La librería jsPDF no está disponible, se procederá solo con WhatsApp.");
+        carrito.forEach(item => {
+            const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
+            if (!prod) return;
+            const subtotal = prod.precio * item.cantidad; 
+            total += subtotal;
+            textoMensajeWhatsApp += `▪️ ${item.cantidad}x [${prod.codigo}] ${prod.articulo} - _${formatearDinero(subtotal)}_\n`;
+            productosParaAPI.push({ codigo: item.codigo, cantidad: item.cantidad });
+        });
+    } else {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFillColor(168, 85, 247); 
+        doc.rect(0, 0, 210, 35, "F");
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("TIENDA DAYH", 15, 18);
         
-        const subtotal = prod.precio * item.cantidad; 
-        total += subtotal;
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(10);
+        doc.text("Tu catálogo de confianza — Comprobante Oficial de Pedido", 15, 26);
+
+        doc.setTextColor(17, 24, 39); 
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("DATOS DEL CLIENTE Y LOGÍSTICA", 15, 48);
         
-        // MEJORA: CONTROL DE PAGINACIÓN: Si se acerca al final de la página (limite ~275), crea otra
-        if (yPosition > 270) {
-            doc.addPage();
-            yPosition = 25; // Reinicia la posición arriba en la nueva hoja
+        doc.setDrawColor(192, 132, 252); 
+        doc.setLineWidth(0.5);
+        doc.line(15, 51, 95, 51);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Nombre Completo:", 15, 59);
+        doc.setFont("helvetica", "normal");
+        doc.text(cliente, 55, 59);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Fecha de Entrega:", 15, 66);
+        doc.setFont("helvetica", "normal");
+        doc.text(formatearFechaHumana(fecha), 55, 66);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Hora Aproximada:", 15, 73);
+        doc.setFont("helvetica", "normal");
+        doc.text(hora, 55, 73);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Método de Pago:", 15, 80);
+        doc.setFont("helvetica", "normal");
+        doc.text(metodoPago, 55, 80);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("DETALLE DEL PEDIDO", 15, 93);
+        doc.line(15, 96, 195, 96);
+
+        doc.setFillColor(249, 250, 251); 
+        doc.rect(15, 100, 180, 8, "F");
+        
+        doc.setFontSize(10);
+        doc.text("Cant.", 18, 105);
+        doc.text("Código", 35, 105);
+        doc.text("Descripción del Artículo", 65, 105);
+        doc.text("Subtotal", 172, 105);
+        
+        doc.setDrawColor(229, 231, 235);
+        doc.line(15, 108, 195, 108);
+
+        let yPosition = 116;
+        doc.setFont("helvetica", "normal");
+        
+        carrito.forEach((item, index) => {
+            const prod = INVENTARIO_GLOBAL.find(p => p.codigo === item.codigo);
+            if (!prod) return;
             
-            // Re-dibujar encabezado simple de tabla en la nueva página
-            doc.setFont("helvetica", "bold");
-            doc.setFillColor(249, 250, 251); 
-            doc.rect(15, yPosition - 5, 180, 8, "F");
-            doc.text("Cant.", 18, yPosition);
-            doc.text("Código", 35, yPosition);
-            doc.text("Descripción del Artículo", 65, yPosition);
-            doc.text("Subtotal", 172, yPosition);
-            yPosition += 12;
-            doc.setFont("helvetica", "normal");
-        }
+            const subtotal = prod.precio * item.cantidad; 
+            total += subtotal;
+            
+            if (yPosition > 270) {
+                doc.addPage();
+                yPosition = 25; 
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFillColor(249, 250, 251); 
+                doc.rect(15, yPosition - 5, 180, 8, "F");
+                doc.text("Cant.", 18, yPosition);
+                doc.text("Código", 35, yPosition);
+                doc.text("Descripción del Artículo", 65, yPosition);
+                doc.text("Subtotal", 172, yPosition);
+                yPosition += 12;
+                doc.setFont("helvetica", "normal");
+            }
 
-        if (index % 2 === 0) {
-            doc.setFillColor(253, 244, 255); 
-            doc.rect(15, yPosition - 5, 180, 8, "F");
-        }
+            if (index % 2 === 0) {
+                doc.setFillColor(253, 244, 255); 
+                doc.rect(15, yPosition - 5, 180, 8, "F");
+            }
 
-        doc.text(`${item.cantidad}x`, 18, yPosition);
-        doc.text(prod.codigo, 35, yPosition);
-        const itemNombre = prod.articulo.length > 40 ? prod.articulo.substring(0, 37) + "..." : prod.articulo;
-        doc.text(itemNombre, 65, yPosition);
-        doc.text(formatearDinero(subtotal), 172, yPosition);
+            doc.text(`${item.cantidad}x`, 18, yPosition);
+            doc.text(prod.codigo, 35, yPosition);
+            const itemNombre = prod.articulo.length > 40 ? prod.articulo.substring(0, 37) + "..." : prod.articulo;
+            doc.text(itemNombre, 65, yPosition);
+            doc.text(formatearDinero(subtotal), 172, yPosition);
 
-        textoMensajeWhatsApp += `▪️ ${item.cantidad}x [${prod.codigo}] ${prod.articulo} - _${formatearDinero(subtotal)}_\n`;
+            textoMensajeWhatsApp += `▪️ ${item.cantidad}x [${prod.codigo}] ${prod.articulo} - _${formatearDinero(subtotal)}_\n`;
+            productosParaAPI.push({ codigo: item.codigo, cantidad: item.cantidad });
+            yPosition += 8;
+        });
 
-        productosParaAPI.push({ codigo: item.codigo, cantidad: item.cantidad });
-        yPosition += 8;
-    });
+        doc.setDrawColor(168, 85, 247); 
+        doc.setLineWidth(1);
+        doc.line(15, yPosition, 195, yPosition);
+        yPosition += 12;
 
-    doc.setDrawColor(168, 85, 247); 
-    doc.setLineWidth(1);
-    doc.line(15, yPosition, 195, yPosition);
-    yPosition += 12;
+        doc.setFillColor(243, 232, 255);
+        doc.rect(120, yPosition - 6, 75, 10, "F");
 
-    doc.setFillColor(243, 232, 255);
-    doc.rect(120, yPosition - 6, 75, 10, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(107, 33, 168); 
+        doc.text("TOTAL A PAGAR:", 125, yPosition);
+        doc.text(formatearDinero(total), 172, yPosition);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(107, 33, 168); 
-    doc.text("TOTAL A PAGAR:", 125, yPosition);
-    doc.text(formatearDinero(total), 172, yPosition);
+        doc.setTextColor(156, 163, 175);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "italic");
+        doc.text("Gracias por tu preferencia. Conserva este PDF como tu comprobante de compra.", 15, yPosition + 15);
 
-    doc.setTextColor(156, 163, 175);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "italic");
-    doc.text("Gracias por tu preferencia. Conserva este PDF como tu comprobante de compra.", 15, yPosition + 15);
+        const safeName = cliente.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        doc.save(`Pedido_${safeName}_${fecha}.pdf`);
+    }
 
-    // 2. DESCARGAR EL PDF AUTOMÁTICAMENTE
-    const safeName = cliente.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    doc.save(`Pedido_${safeName}_${fecha}.pdf`);
-
-    // 3. ENVIAR TODO AL WHATSAPP DEL DUEÑO
     textoMensajeWhatsApp += `\n💰 *TOTAL NETO A PAGAR: ${formatearDinero(total)}*\n\n`;
-    textoMensajeWhatsApp += `⚠️ _Nota: Ya he descargado mi comprobante oficial en formato PDF en mi dispositivo._`;
+    if (window.jspdf) {
+        textoMensajeWhatsApp += `⚠️ _Nota: Ya he descargado mi comprobante oficial en formato PDF en mi dispositivo._`;
+    }
 
     const numeroDestino = typeof TELEFONO_WHATSAPP !== 'undefined' ? TELEFONO_WHATSAPP : "527442411773";
     const urlWhatsApp = `https://wa.me/${numeroDestino}?text=${encodeURIComponent(textoMensajeWhatsApp)}`;
@@ -721,7 +751,6 @@ async function enviarPedidoFinal() {
         alerta.style.display = 'block';
     }
 
-    // Persistencia opcional
     fetch('http://127.0.0.1:5000/', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
@@ -769,59 +798,6 @@ function abrirModalDespacho() {
     document.getElementById('btn-imprimir-despacho').onclick = () => { window.print(); };
 }
 
-// BANNER ROTATIVO (HERO CAROUSEL)
-function inicializarHeroCarousel() {
-    const wrapper = document.getElementById('hero-carousel-wrapper');
-    const dotsContainer = document.getElementById('carousel-dots');
-    if (!wrapper || !dotsContainer) return;
-    wrapper.innerHTML = '';
-    dotsContainer.innerHTML = '';
-
-    PROMO_BANNERS.forEach((banner, idx) => {
-        wrapper.innerHTML += `
-            <div class="hero-slide">
-                <img src="${banner.imagen}" alt="${banner.titulo}">
-                <div class="hero-caption">
-                    <h2>${banner.titulo}</h2>
-                    <p>${banner.desc}</p>
-                </div>
-            </div>
-        `;
-        dotsContainer.innerHTML += `<div class="carousel-dot ${idx === 0 ? 'active' : ''}" onclick="irASlideCarousel(${idx})"></div>`;
-    });
-    arrancarAutoplayCarousel();
-}
-
-function arrancarAutoplayCarousel() {
-    clearInterval(carouselInterval);
-    carouselInterval = setInterval(() => { cambiarSlideCarousel(1); }, 5000);
-}
-
-window.cambiarSlideCarousel = function(direccion) {
-    currentCarouselIndex += direccion;
-    if (currentCarouselIndex >= PROMO_BANNERS.length) currentCarouselIndex = 0;
-    if (currentCarouselIndex < 0) currentCarouselIndex = PROMO_BANNERS.length - 1;
-    actualizarPosicionCarousel();
-}
-
-window.irASlideCarousel = function(indice) {
-    currentCarouselIndex = indice;
-    actualizarPosicionCarousel();
-    arrancarAutoplayCarousel(); 
-}
-
-function actualizarPosicionCarousel() {
-    const wrapper = document.getElementById('hero-carousel-wrapper');
-    if (!wrapper) return;
-    wrapper.style.transform = `translateX(-${currentCarouselIndex * 100}%)`;
-    const dots = document.querySelectorAll('.carousel-dot');
-    dots.forEach((dot, idx) => {
-        if (idx === currentCarouselIndex) dot.classList.add('active');
-        else dot.classList.remove('active');
-    });
-}
-
-// GALERÍA MODERNIZADA (LIGHTBOX)
 window.abrirLightbox = function(src, titulo) {
     const modal = document.getElementById('lightbox-modal');
     const img = document.getElementById('lightbox-img');
@@ -830,14 +806,13 @@ window.abrirLightbox = function(src, titulo) {
     modal.style.display = 'flex';
     img.src = src;
     caption.innerText = titulo || "Visualización de producto";
-}
+};
 
 window.cerrarLightbox = function() {
     const modal = document.getElementById('lightbox-modal');
     if (modal) modal.style.display = 'none';
-}
+};
 
-// MEJORA: BOTÓN VOLVER ARRIBA Y OCULTAR CARRITO FLOTANTE INTELIGENTE
 function inicializarBotónVolverArriba() {
     const btnTop = document.getElementById('btn-back-to-top');
     const btnCarritoFlotante = document.getElementById('carrito-flotante');
@@ -845,15 +820,12 @@ function inicializarBotónVolverArriba() {
     if (!btnTop) return;
     
     window.addEventListener('scroll', () => {
-        // Control botón volver arriba
         if (window.scrollY > 400) btnTop.style.display = 'flex';
         else btnTop.style.display = 'none';
         
-        // Control ocultar carrito flotante si el usuario ya llegó al carrito real
         const carritoSeccion = document.querySelector('.carrito');
         if (carritoSeccion) {
             const rect = carritoSeccion.getBoundingClientRect();
-            // Si el tope del carrito es visible en pantalla, ocultamos el flotante
             if (rect.top < window.innerHeight && rect.bottom >= 0) {
                 if(btnCarritoFlotante) btnCarritoFlotante.style.display = 'none';
             } else {
@@ -867,13 +839,9 @@ function inicializarBotónVolverArriba() {
     });
 }
 
-// ==========================================
-// MEJORA: SINCRONIZACIÓN MULTI-PESTAÑA
-// ==========================================
 window.addEventListener('storage', (e) => {
     if (e.key === 'carrito_tienda') {
         recuperarCarritoDeLocalStorage();
-        // Recargar stock e inventario sincronizado
         let inventarioGuardado = localStorage.getItem('inventario_tienda_real');
         if (inventarioGuardado) {
             INVENTARIO_GLOBAL = JSON.parse(inventarioGuardado);

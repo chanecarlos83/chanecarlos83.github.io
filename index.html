@@ -10,6 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+    <script src="https://cdn.socketio.cloud/4.7.5/socketio.min.js"></script>
+    
     <script src="app.js" defer></script>
 </head>
 
@@ -17,15 +19,7 @@
 
     <div class="header-tienda">
         <button id="btn-tema" class="btn-tema" title="Cambiar Tema Oscuro/Claro">☀️</button>
-        <h1>TIENDA DAYH</h1>
-        <p>Tu catálogo de confianza — Elige tus productos y agenda tu pedido</p>
-    </div>
-
-    <div class="hero-carousel-container">
-        <div class="hero-carousel-wrapper" id="hero-carousel-wrapper"></div>
-        <button class="carousel-arrow prev" onclick="cambiarSlideCarousel(-1)">❮</button>
-        <button class="carousel-arrow next" onclick="cambiarSlideCarousel(1)">❯</button>
-        <div class="carousel-dots" id="carousel-dots"></div>
+        <img src="imagenes_eventos/logo_inicio.png" alt="TIENDA DAYH" class="img-header-inicio" onerror="this.onerror=null; this.src='https://placehold.co/600x200?text=TIENDA+DAYH'">
     </div>
 
     <div class="container">
