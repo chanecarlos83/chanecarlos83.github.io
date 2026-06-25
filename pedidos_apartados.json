@@ -49,5 +49,22 @@
         ],
         "estado": "Pendiente",
         "fecha_registro": "2026-06-25 01:38:53"
+    },
+    {
+        "id": 4,
+        "cliente": "alexis",
+        "telefono": "",
+        "fecha_entrega": "2026-06-25",
+        "hora_entrega": "09:00 AM",
+        "total": 30.0,
+        "detalles": "borrador (x6)",
+        "productos": [
+            {
+                "codigo": "a2",
+                "cantidad": 6
+            }
+        ],
+        "estado": "Pendiente",
+        "fecha_registro": "2026-06-25 01:59:45"
     }
 ]
