@@ -69,7 +69,6 @@ function configurarWebSockets() {
         let producto = INVENTARIO_GLOBAL.find(p => p.codigo === codigo);
         
         if (producto) {
-            // AGREGADO Y CORREGIDO: Evita descuento doble. Actualiza según base de datos central.
             producto.stock = nuevo_stock;
             
             const itemEnCarrito = carrito.find(i => i.codigo === codigo);
@@ -78,14 +77,13 @@ function configurarWebSockets() {
                 if (itemEnCarrito.cantidad <= 0) {
                     carrito = carrito.filter(c => c.codigo !== codigo);
                 }
-                actualizarCarritoVisual(); // Refrescar visualmente el carrito
+                actualizarCarritoVisual(); 
             }
             
             localStorage.setItem('inventario_tienda_real', JSON.stringify(INVENTARIO_GLOBAL));
             filtrarCatalogo();
             renderizarDestacados();
             
-            // Notificar visualmente si el stock es crítico
             if (producto.stock === 0) {
                 mostrarNotificacionFlotante(`❌ Se ha agotado: ${producto.articulo}`, 5000, '#7f1d1d');
             } else if (producto.stock <= 3) {
@@ -154,10 +152,10 @@ function renderizarEventos() {
         <div class="producto-card card-evento-interactiva" style="cursor: pointer;" onclick="filtrarPorEvento('${evento.categoriaVinculada}')">
             <div>
                 <div class="producto-codigo">EVENTO ESPECIAL</div>
-                <div class="img-wrapper" style="height: 115px;">
-                    <img src="${rutaImagen}" alt="${evento.titulo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://placehold.co/300x150?text=${encodeURIComponent(evento.titulo)}'">
+                <div class="img-wrapper">
+                    <img src="${rutaImagen}" alt="${evento.titulo}" onerror="this.onerror=null; this.src='https://placehold.co/300x150?text=${encodeURIComponent(evento.titulo)}'">
                 </div>
-                <h3 style="font-size: 14px; margin: 8px 0 3px 0;">${evento.titulo}</h3>
+                <h3>${evento.titulo}</h3>
                 <div style="font-size: 11px; color: var(--primary-light); font-weight: bold; margin-bottom: 5px;">📅 ${evento.fecha}</div>
                 <p style="font-size: 12px; color: var(--text-light); margin: 0 0 8px 0; line-height: 1.3; text-align: center;">${evento.descripcion}</p>
             </div>
@@ -181,7 +179,6 @@ function filtrarPorEvento(categoria) {
     if (document.getElementById('buscador')) {
         const buscador = document.getElementById('buscador');
         buscador.value = "";
-        // AGREGADO: Cambio de texto para guiar al usuario
         buscador.placeholder = `🔍 Buscando eventos...`; 
     }
     if (document.getElementById('barra-categorias')) document.getElementById('barra-categorias').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -259,7 +256,6 @@ function validarHorariosDisponibles() {
     if (!campoFecha || !campoHora) return;
 
     const fechaSeleccionada = campoFecha.value;
-    
     const hoyObj = new Date();
     const hoyStr = `${hoyObj.getFullYear()}-${String(hoyObj.getMonth() + 1).padStart(2, '0')}-${String(hoyObj.getDate()).padStart(2, '0')}`;
     
@@ -307,17 +303,14 @@ function guardarCarritoEnLocalStorage() { localStorage.setItem('carrito_tienda',
 function recuperarCarritoDeLocalStorage() { const guardado = localStorage.getItem('carrito_tienda'); if (guardado) { carrito = JSON.parse(guardado); } }
 
 function cargarProductos() {
-    // 1. Primero intentamos recuperar el inventario modificado localmente desde el LocalStorage
     let inventarioGuardado = localStorage.getItem('inventario_tienda_real');
 
     if (inventarioGuardado) {
-        // Si ya existe en el navegador, usamos este inventario para mantener los stocks actualizados
         INVENTARIO_GLOBAL = JSON.parse(inventarioGuardado);
         filtrarCatalogo();
         renderizarDestacados();
         actualizarCarritoVisual();
     } else {
-        // 2. Si no existe (es la primera vez que entras), descargamos el JSON original
         fetch('productos.json?v=' + Date.now())
             .then(res => res.json())
             .then(json => {
@@ -327,13 +320,7 @@ function cargarProductos() {
                     destacado: p.destacado === true 
                 }));
                 
-                // Descontamos del stock inicial los productos que ya estén guardados en el carrito
-                carrito.forEach(item => {
-                    let p = INVENTARIO_GLOBAL.find(ig => ig.codigo === item.codigo);
-                    if (p) p.stock = Math.max(0, p.stock - item.cantidad);
-                });
-
-                // Guardamos esta base inicial en el Local Storage
+                // No restamos el stock aquí innecesariamente, ya que el stock real se guarda en inventario_tienda_real al comprar
                 localStorage.setItem('inventario_tienda_real', JSON.stringify(INVENTARIO_GLOBAL));
                 filtrarCatalogo();
                 renderizarDestacados();
@@ -351,7 +338,7 @@ function obtenerArregloImagenes(prod) {
 }
 
 window.moverImagenCarrusel = function (codigo, direccion) {
-    const prod = INVENTARIO_GLOBAL.find(p => p.codigo === codigo);
+    const prod = INVENTARIO_GLOBAL.find(p => p.codigo === code);
     if (!prod) return;
     const images = obtenerArregloImagenes(prod);
     if (images.length <= 1) return;
@@ -382,7 +369,7 @@ window.compartirProducto = function(codigo, nombre, precio) {
 
 function generarHTMLTarjeta(prod, esDestacada = false) {
     const stock = prod.stock;
-    const esAgotado = stock <= 0 && (!carrito.find(i => i.codigo === prod.codigo));
+    const esAgotado = stock <= 0;
     let txtStock = `Disponibles: ${stock}`, cStock = 'producto-stock';
     if (stock <= 0) { txtStock = '❌ Agotado'; cStock = 'producto-stock agotado'; }
     else if (stock <= 3) { txtStock = `🔥 ¡Últimas ${stock} pzs!`; cStock = 'producto-stock stock-critico'; }
@@ -468,7 +455,6 @@ function seleccionarCategoria(cat, elemento) {
     document.querySelectorAll('.btn-categoria').forEach(b => b.classList.remove('activo'));
     if (elemento) elemento.classList.add('activo');
     
-    // AGREGADO: Restaurar el buscador visualmente al cambiar la categoría
     if (document.getElementById('buscador')) {
         document.getElementById('buscador').placeholder = cat === 'todas' 
             ? " 🔍 ¿Qué estás buscando hoy? Escribe nombre o código..." 
@@ -513,19 +499,22 @@ window.agregarAlCarrito = function (codigo) {
 };
 
 window.agregarAlCarritoConEfecto = function(codigo, botonElement) {
-    agregarAlCarrito(codigo);
     if (botonElement && !botonElement.disabled) {
-        const textoOriginal = botonElement.innerHTML;
-        botonElement.disabled = true;
-        botonElement.style.background = "var(--success)";
-        botonElement.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.5)";
-        botonElement.innerHTML = "¡Añadido! ✓";
-        setTimeout(() => {
-            botonElement.disabled = false;
-            botonElement.style.background = "";
-            botonElement.style.boxShadow = "";
-            botonElement.innerHTML = textoOriginal;
-        }, 1200);
+        agregarAlCarrito(codigo);
+        // Validamos si se pudo añadir comprobando si ahora existe en el carrito
+        if (carrito.find(i => i.codigo === codigo)) {
+            const textoOriginal = botonElement.innerHTML;
+            botonElement.disabled = true;
+            botonElement.style.background = "var(--success)";
+            botonElement.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.5)";
+            botonElement.innerHTML = "¡Añadido! ✓";
+            setTimeout(() => {
+                botonElement.disabled = false;
+                botonElement.style.background = "";
+                botonElement.style.boxShadow = "";
+                botonElement.innerHTML = textoOriginal;
+            }, 1200);
+        }
     }
 };
 
@@ -778,6 +767,10 @@ async function enviarPedidoFinal() {
         alerta.style.display = 'block';
     }
 
+    // ⚡ COMENTADO O CAMBIADO: La lógica ya descontó paso a paso del stock al meterlos al carrito.
+    // Al finalizar el pedido confirmamos el estado del inventario guardándolo.
+    localStorage.setItem('inventario_tienda_real', JSON.stringify(INVENTARIO_GLOBAL));
+
     fetch('http://127.0.0.1:5000/', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
@@ -786,6 +779,7 @@ async function enviarPedidoFinal() {
 
     localStorage.setItem("nombre_cliente_dayh", cliente);
     
+    // Vaciamos el carrito ya que la compra fue realizada con éxito
     carrito = [];
     guardarCarritoEnLocalStorage();
     actualizarCarritoVisual();

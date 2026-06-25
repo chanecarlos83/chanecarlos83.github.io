@@ -29,9 +29,9 @@ body {
 .header-tienda { 
     text-align: center; 
     margin-bottom: 35px; 
-    padding: 20px 10px; /* Reducido el padding vertical excesivo para ajustar la imagen */
+    padding: 20px 10px; 
     position: relative;
-    background: transparent; /* Permite que resalte más tu diseño */
+    background: transparent; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -40,13 +40,12 @@ body {
 .img-header-inicio {
     max-width: 100%;
     height: auto;
-    max-height: 220px; /* Controla la altura máxima para que no sature la pantalla */
+    max-height: 220px; 
     object-fit: contain;
-    border-radius: 12px; /* Un toque sutil redondeado en las esquinas */
-    filter: drop-shadow(0px 4px 12px rgba(168, 85, 247, 0.25)); /* Sombra suave morada neón */
+    border-radius: 12px; 
+    filter: drop-shadow(0px 4px 12px rgba(168, 85, 247, 0.25)); 
 }
 
-/* Asegurar que el botón flotante de tema no estorbe la imagen */
 .btn-tema {
     position: absolute;
     top: 15px;
@@ -318,12 +317,12 @@ body.light-mode .producto-codigo { color: #6b21a8; font-weight: 800; }
 
 /* 📱 RESPONSIVE DESIGN - OPTIMIZACIÓN MULTICOLUMNA PARA TELÉFONOS */
 @media (max-width: 768px) {
-    body { padding: 10px; }
-    .container { gap: 15px; }
+    body { padding: 10px; } 
+    .container { gap: 15px; } 
     .header-tienda { padding: 15px 10px; }
     .header-tienda h1 { font-size: 24px; }
-    .categorias-barra { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; }
-    .carrito { padding: 15px; }
+    .categorias-barra { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 10px; } 
+    .carrito { padding: 15px; } 
 
     /* Forzar cuadrícula limpia de varias columnas en celulares */
     .productos {
@@ -345,10 +344,21 @@ body.light-mode .producto-codigo { color: #6b21a8; font-weight: 800; }
         border-radius: 10px !important;
     }
 
-    /* Evitar que las fotos de los productos se deformen o queden inmensas */
+    /* 📱 MEDIDA IDÉNTICA FORZADA: Todas las imágenes miden igual y encajan de forma perfecta */
     .img-wrapper {
-        height: 110px !important;
-        margin-bottom: 4px;
+        width: 100% !important;
+        height: 110px !important; /* Altura idéntica y fija para todos los productos */
+        margin-bottom: 4px !important;
+        overflow: hidden !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .producto-card img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important; /* Corta proporcionalmente las imágenes para homogeneizar el catálogo */
     }
 
     .producto-card h3 {
@@ -356,7 +366,7 @@ body.light-mode .producto-codigo { color: #6b21a8; font-weight: 800; }
         margin: 6px 0 4px 0 !important;
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis; /* Corta textos muy largos con '...' */
+        text-overflow: ellipsis; 
     }
 
     .producto-codigo {
