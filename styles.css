@@ -13,6 +13,7 @@
 }
 
 * {
+    box-sizing: border-box; /* Asegura que el padding no rompa las medidas */
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 }
 
@@ -130,7 +131,7 @@ body {
 .productos-seccion { flex: 2; min-width: 320px; }
 .productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 185px), 1fr)); gap: 15px; }
 
-/* TARJETAS DE PRODUCTO */
+/* TARJETAS DE PRODUCTO DESKTOP */
 .producto-card { 
     background: rgba(31, 41, 55, 0.65) !important;
     backdrop-filter: blur(10px);
@@ -146,7 +147,6 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     position: relative;
     overflow: hidden;
-    box-sizing: border-box;
 }
 .producto-card:hover {
     transform: translateY(-6px) !important;
@@ -154,10 +154,31 @@ body {
     box-shadow: 0 0 15px rgba(192, 132, 252, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
-.img-wrapper { width: 100%; height: 130px; border-radius: 10px; overflow: hidden; background-color: transparent; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; position: relative; }
+.img-wrapper { 
+    width: 100%; 
+    height: 140px; 
+    border-radius: 10px; 
+    overflow: hidden; 
+    background-color: transparent; 
+    margin-bottom: 5px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    position: relative; 
+}
 .producto-card img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s ease; }
 .producto-card:hover img { transform: scale(1.08); }
-.producto-card h3 { margin: 10px 0 4px 0; font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--text); }
+
+.producto-card h3 { 
+    margin: 10px 0 4px 0; 
+    font-size: 15px; 
+    font-weight: 600; 
+    line-height: 1.3; 
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Evita que nombres largos deformen la tarjeta */
+}
 .producto-codigo { font-size: 10px; color: var(--primary-light); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
 .producto-stock { font-size: 12px; font-weight: 600; color: var(--success); margin-bottom: 6px; }
 .producto-stock.agotado { color: var(--danger); }
@@ -220,7 +241,7 @@ body {
 .buscador-contenedor input:focus { border-color: var(--primary-light); outline: none; box-shadow: 0 0 12px rgba(168, 85, 247, 0.3); }
 
 /* CATEGORÍAS */
-.categorias-barra { display: flex; gap: 12px; overflow-x: auto; flex-wrap: nowrap !important; padding: 10px 5px 15px 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin-bottom: 25px; }
+.categorias-barra { display: flex; gap: 12px; overflow-x: auto; flex-wrap: nowrap; padding: 10px 5px 15px 5px; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin-bottom: 25px; }
 .categorias-barra::-webkit-scrollbar { display: none; }
 .btn-categoria { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 85px; height: 65px; flex-shrink: 0; border-radius: 14px; padding: 6px 12px; font-size: 11px; background: var(--card-bg); color: var(--text-light); border: 1px solid var(--border); cursor: pointer; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
 .btn-categoria span { font-size: 20px; transition: transform 0.2s ease; }
@@ -327,14 +348,14 @@ body.light-mode .producto-codigo { color: #6b21a8; font-weight: 800; }
     /* Forzar cuadrícula limpia de varias columnas en celulares */
     .productos {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)) !important;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
         gap: 10px !important;
     }
 
     /* Modificadores para Productos Destacados en horizontal móvil */
     .productos-destacados .producto-card, 
     .productos-destacados .card-evento-interactiva { 
-        min-width: 135px !important; 
+        min-width: 140px !important; 
         max-width: 145px !important; 
     }
 
@@ -342,6 +363,9 @@ body.light-mode .producto-codigo { color: #6b21a8; font-weight: 800; }
     .producto-card {
         padding: 10px !important;
         border-radius: 10px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
     }
 
     /* 📱 MEDIDA IDÉNTICA FORZADA: Todas las imágenes miden igual y encajan de forma perfecta */
@@ -353,12 +377,13 @@ body.light-mode .producto-codigo { color: #6b21a8; font-weight: 800; }
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        background: transparent !important;
     }
 
     .producto-card img {
         width: 100% !important;
         height: 100% !important;
-        object-fit: cover !important; /* Corta proporcionalmente las imágenes para homogeneizar el catálogo */
+        object-fit: contain !important; /* Mantiene la proporción del producto sin estirarlo ni deformarlo */
     }
 
     .producto-card h3 {
