@@ -1,1 +1,11 @@
-[]
+[
+    {
+        "codigo": "c1",
+        "articulo": "Bocina Hongo Verde",
+        "precio": 100.0,
+        "stock": 1,
+        "categoria": "Electronica",
+        "imagen": "imagenes_productos/IMG_c1_1782603229.jpg",
+        "destacado": false
+    }
+]
