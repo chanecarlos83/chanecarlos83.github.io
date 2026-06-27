@@ -7,5 +7,14 @@
         "categoria": "Papeleria",
         "imagen": "imagenes_productos/IMG_a1_1782590432.png",
         "destacado": true
+    },
+    {
+        "codigo": "a2",
+        "articulo": "borrador",
+        "precio": 5.0,
+        "stock": 5,
+        "categoria": "Papeleria",
+        "imagen": "imagenes_productos/IMG_a2_1782591151.png",
+        "destacado": true
     }
 ]
