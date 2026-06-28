@@ -25,5 +25,14 @@
         "categoria": "Electronica",
         "imagen": "imagenes_productos/IMG_c3_1782606032.jpg",
         "destacado": false
+    },
+    {
+        "codigo": "c4",
+        "articulo": "Mini Bocina Rojo",
+        "precio": 120.0,
+        "stock": 1,
+        "categoria": "Electronica",
+        "imagen": "imagenes_productos/IMG_c4_1782607271.jpg",
+        "destacado": false
     }
 ]
