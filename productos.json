@@ -1,11 +1,11 @@
 [
     {
         "codigo": "c1",
-        "articulo": "Mini Bocina Hongo Verde",
-        "precio": 100.0,
-        "stock": 1,
+        "articulo": "Regleta Multicontacto",
+        "precio": 45.0,
+        "stock": 4,
         "categoria": "Electronica",
-        "imagen": "imagenes_productos/IMG_c1_1782603229.jpg",
+        "imagen": "imagenes_productos/IMG_c1_1782605347.jpg",
         "destacado": false
     }
 ]
