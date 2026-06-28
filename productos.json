@@ -34,5 +34,14 @@
         "categoria": "Electronica",
         "imagen": "imagenes_productos/IMG_c4_1782607271.jpg",
         "destacado": false
+    },
+    {
+        "codigo": "c5",
+        "articulo": "Mini Ventlador",
+        "precio": 90.0,
+        "stock": 3,
+        "categoria": "Electronica",
+        "imagen": "imagenes_productos/IMG_c5_1782607699.jpg",
+        "destacado": false
     }
 ]
