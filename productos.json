@@ -7,5 +7,14 @@
         "categoria": "Electronica",
         "imagen": "imagenes_productos/IMG_c1_1782605716.jpg",
         "destacado": false
+    },
+    {
+        "codigo": "c2",
+        "articulo": "Regleta Multicontacto",
+        "precio": 45.0,
+        "stock": 4,
+        "categoria": "Electronica",
+        "imagen": "imagenes_productos/IMG_c2_1782605789.jpg",
+        "destacado": false
     }
 ]
