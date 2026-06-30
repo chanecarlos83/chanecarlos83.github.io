@@ -52,5 +52,14 @@
         "categoria": "Electronica",
         "imagen": "imagenes_productos/IMG_c8_1782609658.jpg",
         "destacado": false
+    },
+    {
+        "codigo": "c2",
+        "articulo": "barra multicontacto",
+        "precio": 45.0,
+        "stock": 4,
+        "categoria": "Electronica",
+        "imagen": "imagenes_productos/IMG_c2_1782858645.jpg",
+        "destacado": false
     }
 ]
